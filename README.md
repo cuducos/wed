@@ -4,6 +4,10 @@
 
 `wed`'s idea is to automate something I do pretty often: once I register for a run or triathlon event, I frequently check the city's weather forecast for the race's date and time in the previous weeks and days.
 
+## Requirements
+
+You will need an OpenWeather API key as en environment variable called `OPEN_WEATHER_API_KEY`.
+
 ## Use cases (in the API-driven development style)
 
 Try `wed --help`.

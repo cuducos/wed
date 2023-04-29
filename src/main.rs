@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use chrono::NaiveDateTime;
 use clap::Parser;
-use wed::Forecast;
+use wed::Event;
 
 const DATE_INPUT_FORMAT: &str = "%Y-%m-%d %H:%M";
 
@@ -33,17 +33,18 @@ struct Args {
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
-    let forecast = Forecast::new(args.when, args.location).await?;
+    let event = Event::new(args.when, args.location).await?;
 
     // Debug
-    println!("{forecast}");
+    println!("{event}");
     if let Some(name) = args.name {
         println!("Event\t{name}");
     }
-    if forecast.is_in_the_past() {
+    if event.is_in_the_past() {
         println!("Warning: the event date is in the past");
     }
-    forecast.api();
+
+    event.weather()?;
 
     Ok(())
 }

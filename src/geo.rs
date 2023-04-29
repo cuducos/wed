@@ -10,7 +10,7 @@ struct Location {
     lon: String,
 }
 
-pub async fn geo_location_for(query: &str) -> Result<(f64, f64)> {
+pub async fn coordinates(query: &str) -> Result<(f64, f64)> {
     let url = format!("{NOMINATIM_URL}{query}");
     let user_agent = format!(
         "{}/{} ({})",

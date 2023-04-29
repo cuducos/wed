@@ -3,12 +3,12 @@ use std::fmt;
 
 use chrono::NaiveDateTime;
 
-mod nominatim;
-mod open_weather_map;
+mod forecast;
+mod geo;
 
 const DATE_OUTPUT_FORMAT: &str = "%b %-d, %H:%M";
 
-pub struct Forecast {
+pub struct Event {
     when: NaiveDateTime,
     location: String,
     latitude: f64,
@@ -16,9 +16,9 @@ pub struct Forecast {
     days: i64,
 }
 
-impl Forecast {
+impl Event {
     pub async fn new(when: NaiveDateTime, location: String) -> Result<Self> {
-        let (latitude, longitude) = nominatim::geo_location_for(&location).await?;
+        let (latitude, longitude) = geo::coordinates(&location).await?;
 
         Ok(Self {
             when,
@@ -33,17 +33,21 @@ impl Forecast {
         self.days < 0
     }
 
-    pub fn api(&self) {
-        match self.days {
-            0..=4 => open_weather_map::four_days_forecast(self.latitude, self.longitude),
-            5..=16 => open_weather_map::sixteen_days_forecast(self.latitude, self.longitude),
-            17..=30 => open_weather_map::thirty_days_forecast(self.latitude, self.longitude),
+    pub fn weather(&self) -> Result<()> {
+        let weather = forecast::Forecast::new(self.latitude, self.longitude)?;
+
+            match self.days {
+            0..=4 => weather.four_days(),
+            5..=16 => weather.sixteen_days(),
+            17..=30 => weather.thirty_days(),
             _ => (),
         };
+
+    Ok(())
     }
 }
 
-impl fmt::Display for Forecast {
+impl fmt::Display for Event {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
