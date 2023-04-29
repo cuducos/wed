@@ -1,4 +1,4 @@
-name: Tests
+name: Linters
 on:
   push:
     branches: [ "main" ]
@@ -11,5 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Tests
-      run: cargo test --verbose
+    - name: Format
+      run:  cargo fmt --check
+    - name: Clippy
+      run: cargo clippy --verbose -- -D warnings

@@ -1,4 +1,4 @@
-# Weather on the Event Day
+# Weather on the Event Day [![Tests](https://github.com/cuducos/wed/actions/workflows/tests.yml/badge.svg)](https://github.com/cuducos/wed/actions/workflows/tests.yml) [![Linters](https://github.com/cuducos/wed/actions/workflows/linters.yml/badge.svg)](https://github.com/cuducos/wed/actions/workflows/linters.yml)
 
 **:warning: THIS IS A WORK IN PROGRESS :warning:**
 

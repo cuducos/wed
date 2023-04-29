@@ -45,7 +45,7 @@ impl Event {
             }
             return false;
         }
-        return true;
+        true
     }
 
     pub fn weather(&self) -> Result<()> {
