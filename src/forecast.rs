@@ -1,6 +1,7 @@
 use std::env;
 
 use anyhow::{Context, Result};
+use reqwest::Url;
 
 const MISSING_API_KEY_ERROR: &str = "Couldn't find the OpenWeather API key as an
 environment variable called OPEN_WEATHER_API_KEY. You need to create
@@ -23,25 +24,38 @@ impl Forecast {
         })
     }
 
-    pub fn four_days(&self) {
-        self.todo(4)
+    pub fn four_days(&self) -> Result<()> {
+        self.todo(4, "pro", "hourly")
     }
 
-    pub fn sixteen_days(&self) {
-        self.todo(16)
+    pub fn sixteen_days(&self) -> Result<()> {
+        self.todo(16, "api", "daily")
     }
 
-    pub fn thirty_days(&self) {
-        self.todo(30)
+    pub fn thirty_days(&self) -> Result<()> {
+        self.todo(30, "pro", "climate")
     }
 
-    fn todo(&self, days: i64) {
-        println!(
-            "TODO: {} days forecast API for {}, {} with API key starting with {}…",
-            days,
-            self.latitude,
-            self.longitude,
-            self.api_key.get(..3).unwrap()
-        );
+    fn url(&self, subdomain: &str, endpoint: &str) -> Result<Url> {
+        let base_url =
+            format!("https://{subdomain}.openweathermap.org/data/2.5/forecast/{endpoint}");
+        let url = Url::parse_with_params(
+            base_url.as_str(),
+            &[
+                ("lat", self.latitude.to_string()),
+                ("lon", self.longitude.to_string()),
+                ("appid", self.api_key.clone()),
+                ("unit", "metric".to_string()), // TODO: CLI option for unit
+                ("lang", "en".to_string()),     // TODO: CLI option for language
+            ],
+        )?;
+
+        Ok(url)
+    }
+
+    fn todo(&self, days: i64, subdomain: &str, endpoint: &str) -> Result<()> {
+        let url = self.url(subdomain, endpoint)?;
+        println!("TODO: {days} days forecast {url}");
+        Ok(())
     }
 }

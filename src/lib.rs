@@ -37,9 +37,9 @@ impl Event {
         let weather = forecast::Forecast::new(self.latitude, self.longitude)?;
 
             match self.days {
-            0..=4 => weather.four_days(),
-            5..=16 => weather.sixteen_days(),
-            17..=30 => weather.thirty_days(),
+            0..=4 => weather.four_days()?,
+            5..=16 => weather.sixteen_days()?,
+            17..=30 => weather.thirty_days()?,
             _ => (),
         };
 
