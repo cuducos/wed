@@ -1,8 +1,18 @@
 # Weather on the Event Day [![Tests](https://github.com/cuducos/wed/actions/workflows/tests.yml/badge.svg)](https://github.com/cuducos/wed/actions/workflows/tests.yml) [![Linters](https://github.com/cuducos/wed/actions/workflows/linters.yml/badge.svg)](https://github.com/cuducos/wed/actions/workflows/linters.yml)
 
+`wed`'s idea is to automate something I do pretty often: once I register for a run or triathlon event, I frequently check the city's weather forecast for the race's date and time in the previous days.
+
 **:warning: THIS IS A WORK IN PROGRESS :warning:**
 
-`wed`'s idea is to automate something I do pretty often: once I register for a run or triathlon event, I frequently check the city's weather forecast for the race's date and time in the previous days.
+## TODO list
+
+- Make a request to the output of, for example, `wed --when "2022-05-04" --location "Ottawa, ON"` and print the body of the response
+- Parse the JSON response in a struct
+- Get the forecast closer to the event's date and time
+- Implement the JSON flag in the CLI and the emoji output as default
+- Implement flags for unit and language
+- Persist named events in `~/.wed`
+- Automatically delete past events from `~/.wed` when the app is run
 
 ## Requirements
 
