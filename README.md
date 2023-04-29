@@ -2,7 +2,7 @@
 
 **:warning: THIS IS A WORK IN PROGRESS :warning:**
 
-`wed`'s idea is to automate something I do pretty often: once I register for a run or triathlon event, I frequently check the city's weather forecast for the race's date and time in the previous weeks and days.
+`wed`'s idea is to automate something I do pretty often: once I register for a run or triathlon event, I frequently check the city's weather forecast for the race's date and time in the previous days.
 
 ## Requirements
 
@@ -81,6 +81,7 @@ $ wed --json
 * Convertion of location (city/country) to a latitude and longitude: [Nominatin](https://wiki.openstreetmap.org/wiki/Nominatim)
 * Weather forecast:
    * If _t - 5 days_: [Hourly forecast 5 days](https://openweathermap.org/forecast5)
+   * There are other endpoints (hourly closer to the event, daily up to 30 days from the event), but since they are paid, `wed` doesn't use them
 
 ## Data management and persistence
 
