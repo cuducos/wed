@@ -80,12 +80,10 @@ $ wed --json
 
 * Convertion of location (city/country) to a latitude and longitude: [Nominatin](https://wiki.openstreetmap.org/wiki/Nominatim)
 * Weather forecast:
-   * If _t - 4 days_: [Hourly forecast 4 days](https://openweathermap.org/api/hourly-forecast)
-   * If _t - 16 days_: [Daily forecast 16 days](https://openweathermap.org/forecast16)
-   * It _t - 30 days_: [Climatic forecast 30 days](https://openweathermap.org/api/forecast30)
+   * If _t - 5 days_: [Hourly forecast 5 days](https://openweathermap.org/forecast5)
 
 ## Data management and persistence
 
 * The app automaticaly deletes past events when the app is run
-* The app igonres events that are more than 30 days ahead
-* Data is persisted in simple file, like a `~/.wed`
+* The app igonres events that are more than 5 days ahead
+* Data is persisted in simple file `~/.wed`

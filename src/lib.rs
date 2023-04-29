@@ -29,21 +29,31 @@ impl Event {
         })
     }
 
-    pub fn is_in_the_past(&self) -> bool {
-        self.days < 0
+    pub fn has_weather_forcast(&self, verbose: bool) -> bool {
+        if self.days < 0 {
+            if verbose {
+                println!("Skipping weather forecast for {} days ago.", -self.days);
+            }
+            return false;
+        }
+        if self.days > 5 {
+            if verbose {
+                println!(
+                    "Skipping weather forecast for {} days in the future.",
+                    self.days
+                );
+            }
+            return false;
+        }
+        return true;
     }
 
     pub fn weather(&self) -> Result<()> {
-        let weather = forecast::Forecast::new(self.latitude, self.longitude)?;
+        if !self.has_weather_forcast(true) {
+            return Ok(());
+        }
 
-            match self.days {
-            0..=4 => weather.four_days()?,
-            5..=16 => weather.sixteen_days()?,
-            17..=30 => weather.thirty_days()?,
-            _ => (),
-        };
-
-    Ok(())
+        forecast::Forecast::new(self.latitude, self.longitude)?.five_days()
     }
 }
 

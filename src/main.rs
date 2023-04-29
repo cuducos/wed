@@ -40,10 +40,6 @@ async fn main() -> Result<()> {
     if let Some(name) = args.name {
         println!("Event\t{name}");
     }
-    if event.is_in_the_past() {
-        println!("Warning: the event date is in the past");
-    }
-
     event.weather()?;
 
     Ok(())
