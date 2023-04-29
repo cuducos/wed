@@ -6,7 +6,7 @@
 
 ## Requirements
 
-You will need an OpenWeather API key as en environment variable called `OPEN_WEATHER_API_KEY`.
+You will need an [OpenWeather API key](https://home.openweathermap.org/api_keys) as en environment variable called `OPEN_WEATHER_API_KEY`.
 
 ## Use cases (in the API-driven development style)
 
