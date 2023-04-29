@@ -14,6 +14,13 @@ Run `wed` with two arguments:
 
 ```console
 $ wed --when "2022-07-09" --location "Ottawa, ON"
+🌤 26°C (feels like 27°C)  ☔ 40% chance of rain & 10% humidity 💨 4.2 km/h W
+```
+
+Or with a JSON output:
+
+```console
+$ wed --when "2022-07-09" --location "Ottawa, ON" --json
 {
     "temperature": 26,
     "feels_like": 27,
@@ -39,6 +46,14 @@ Run `wed` with no arguments:
 
 ```console
 $ wed
+🗓 National Capital Triathlon (Jul 7, 09:00) 🌐 Ottawa, ON, Canada
+🌤 26°C (feels like 27°C) ☔ 40% chance of rain & 10% humidity 💨 4.2 km/h W
+```
+
+Or with a JSON output:
+
+```console
+$ wed --json
 [
     {
         "name": "National Capital Triathlon",
