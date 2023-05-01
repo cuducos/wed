@@ -28,16 +28,25 @@ struct Args {
     /// Event name
     #[arg(short, long)]
     name: Option<String>,
+
+    /// Outputs the weather forcast for the event day in JSON format (instead
+    /// of the human-readable version)
+    #[arg(short, long)]
+    json: bool,
+
+    // Output more information about the internal state of the application
+    #[arg(short, long)]
+    verbose: bool,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
     let event = Event::new(args.when, args.location).await?;
-    if !event.has_weather_forcast(false) {
+    if !event.has_weather_forcast(args.verbose) {
         return Ok(());
     }
 
-    println!("{}", event.weather(false).await?);
+    println!("{}", event.weather(args.json).await?);
     Ok(())
 }

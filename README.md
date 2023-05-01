@@ -6,10 +6,9 @@
 
 ## TODO list
 
-- Implement the JSON flag in the CLI
-- Implement flags for unit and language
 - Persist named events in `~/.wed`
 - Automatically delete past events from `~/.wed` when the app is run
+- Implement flags for unit and language
 
 ## Requirements
 
@@ -28,7 +27,7 @@ $ wed --when "2022-07-09" --location "Ottawa, ON"
 🌤 26°C (feels like 27°C)  ☔ 40% chance of rain & 10% humidity 💨 4.2 km/h W
 ```
 
-Or with a JSON output (:warning: this is not implemented yet):
+Or with a JSON output:
 
 ```console
 $ wed --when "2022-07-09" --location "Ottawa, ON" --json
@@ -43,7 +42,9 @@ $ wed --when "2022-07-09" --location "Ottawa, ON" --json
 }
 ```
 
-### Save an event (:warning: this is not implemented yet)
+### :warning: Features to be implemented :warning:
+
+#### Save an event
 
 Run `wed` with three arguments:
 
@@ -51,7 +52,7 @@ Run `wed` with three arguments:
 $ wed --name "National Capital Triathlon" --when "2022-07-09 09:00" --location "Ottawa, ON, Canada"
 ```
 
-### Query saved events (:warning: this is not implemented yet)
+#### Query saved events
 
 Run `wed` with no arguments:
 
