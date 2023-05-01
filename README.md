@@ -6,8 +6,6 @@
 
 ## TODO list
 
-- Make a request to the output of, for example, `wed --when "2022-05-04" --location "Ottawa, ON"` and print the body of the response
-- Parse the JSON response in a struct
 - Get the forecast closer to the event's date and time
 - Implement the JSON flag in the CLI and the emoji output as default
 - Implement flags for unit and language

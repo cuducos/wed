@@ -48,12 +48,14 @@ impl Event {
         true
     }
 
-    pub fn weather(&self) -> Result<()> {
+    pub async fn weather(&self) -> Result<()> {
         if !self.has_weather_forcast(true) {
             return Ok(());
         }
 
-        forecast::Forecast::new(self.latitude, self.longitude)?.five_days()
+        forecast::Forecast::new(self.latitude, self.longitude)?
+            .five_days()
+            .await
     }
 }
 
