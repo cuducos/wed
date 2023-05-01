@@ -38,6 +38,6 @@ async fn main() -> Result<()> {
         return Ok(());
     }
 
-    println!("{}", event.weather().await?);
+    println!("{}", event.weather(false).await?);
     Ok(())
 }

@@ -3,9 +3,11 @@ use std::fmt;
 
 use chrono::NaiveDateTime;
 
+mod emoji;
 mod forecast;
 mod geo;
 mod open_weather_date_format;
+mod wind;
 
 const DATE_OUTPUT_FORMAT: &str = "%b %-d, %H:%M";
 
@@ -49,12 +51,16 @@ impl Event {
         true
     }
 
-    pub async fn weather(&self) -> Result<String> {
+    pub async fn weather(&self, json: bool) -> Result<String> {
         let weather = forecast::Forecast::new(self.latitude, self.longitude)?
             .five_days(self.when)
             .await?;
 
-        Ok(serde_json::to_string(&weather)?)
+        if json {
+            weather.as_json()
+        } else {
+            weather.as_string()
+        }
     }
 }
 

@@ -6,7 +6,7 @@
 
 ## TODO list
 
-- Implement the JSON flag in the CLI and the emoji output as default
+- Implement the JSON flag in the CLI
 - Implement flags for unit and language
 - Persist named events in `~/.wed`
 - Automatically delete past events from `~/.wed` when the app is run
@@ -15,7 +15,7 @@
 
 You will need an [OpenWeather API key](https://home.openweathermap.org/api_keys) as en environment variable called `OPEN_WEATHER_API_KEY`.
 
-## Use cases (in the API-driven development style)
+## Use cases
 
 Try `wed --help`.
 
@@ -28,7 +28,7 @@ $ wed --when "2022-07-09" --location "Ottawa, ON"
 🌤 26°C (feels like 27°C)  ☔ 40% chance of rain & 10% humidity 💨 4.2 km/h W
 ```
 
-Or with a JSON output:
+Or with a JSON output (:warning: this is not implemented yet):
 
 ```console
 $ wed --when "2022-07-09" --location "Ottawa, ON" --json
@@ -43,7 +43,7 @@ $ wed --when "2022-07-09" --location "Ottawa, ON" --json
 }
 ```
 
-### Save an event
+### Save an event (:warning: this is not implemented yet)
 
 Run `wed` with three arguments:
 
@@ -51,7 +51,7 @@ Run `wed` with three arguments:
 $ wed --name "National Capital Triathlon" --when "2022-07-09 09:00" --location "Ottawa, ON, Canada"
 ```
 
-### Query saved events
+### Query saved events (:warning: this is not implemented yet)
 
 Run `wed` with no arguments:
 
@@ -87,7 +87,7 @@ $ wed --json
 
 * Convertion of location (city/country) to a latitude and longitude: [Nominatin](https://wiki.openstreetmap.org/wiki/Nominatim)
 * Weather forecast:
-   * If _t - 5 days_: [Hourly forecast 5 days](https://openweathermap.org/forecast5)
+   * If _t - 5 days_: [3h forecast](https://openweathermap.org/forecast5)
    * There are other endpoints (hourly closer to the event, daily up to 30 days from the event), but since they are paid, `wed` doesn't use them
 
 ## Data management and persistence

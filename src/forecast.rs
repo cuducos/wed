@@ -5,7 +5,9 @@ use chrono::NaiveDateTime;
 use reqwest::{Client, Url};
 use serde::{self, Deserialize, Serialize};
 
+use crate::emoji;
 use crate::open_weather_date_format;
+use crate::wind;
 
 const API_BASE_URL: &str = "https://api.openweathermap.org/data/2.5/forecast";
 const MISSING_API_KEY_ERROR: &str = "Couldn't find the OpenWeather API key as an
@@ -26,6 +28,27 @@ pub struct Weather {
     pub humidity: f64,
     pub wind_speed: f64,
     pub wind_direction: f64, // TODO: convert to N/E/S/W
+}
+
+impl Weather {
+    pub fn as_json(&self) -> Result<String> {
+        Ok(serde_json::to_string(&self)?)
+    }
+
+    pub fn as_string(&self) -> Result<String> {
+        Ok(format!(
+            "{} {}°C (feels like {}°C) {} {}% chance of rain & {}% humidity {} {}km/h {}",
+            emoji::emoji_for_weather(&self.title)?,
+            self.temperature.round(),
+            self.feels_like.round(),
+            emoji::PRECIPITATION,
+            (self.probability_of_precipitation * 100.0).round(),
+            self.humidity,
+            emoji::WIND,
+            self.wind_speed.round(),
+            wind::wind_direction(self.wind_direction)?,
+        ))
+    }
 }
 
 #[derive(Deserialize, Debug)]
