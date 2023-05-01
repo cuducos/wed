@@ -6,7 +6,6 @@
 
 ## TODO list
 
-- Get the forecast closer to the event's date and time
 - Implement the JSON flag in the CLI and the emoji output as default
 - Implement flags for unit and language
 - Persist named events in `~/.wed`

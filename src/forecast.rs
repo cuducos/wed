@@ -3,25 +3,29 @@ use std::env;
 use anyhow::{anyhow, Context, Result};
 use chrono::NaiveDateTime;
 use reqwest::{Client, Url};
-use serde::{self, Deserialize};
+use serde::{self, Deserialize, Serialize};
 
+use crate::open_weather_date_format;
+
+const API_BASE_URL: &str = "https://api.openweathermap.org/data/2.5/forecast";
 const MISSING_API_KEY_ERROR: &str = "Couldn't find the OpenWeather API key as an
 environment variable called OPEN_WEATHER_API_KEY. You need to create
 one. It's free.
 * Create an account at https://home.openweathermap.org/users
 * Get the key from https://home.openweathermap.org/api_keys";
 
-mod my_date_format {
-    use chrono::NaiveDateTime;
-    use serde::{self, Deserialize, Deserializer};
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<NaiveDateTime, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        NaiveDateTime::parse_from_str(&s, "%Y-%m-%d %H:%M:%S").map_err(serde::de::Error::custom)
-    }
+#[derive(Serialize, Debug)]
+pub struct Weather {
+    #[serde(with = "open_weather_date_format")]
+    pub date: NaiveDateTime,
+    pub title: String,
+    pub description: String,
+    pub probability_of_precipitation: f64,
+    pub temperature: f64,
+    pub feels_like: f64,
+    pub humidity: f64,
+    pub wind_speed: f64,
+    pub wind_direction: f64, // TODO: convert to N/E/S/W
 }
 
 #[derive(Deserialize, Debug)]
@@ -37,7 +41,7 @@ struct Main {
 }
 
 #[derive(Deserialize, Debug)]
-struct Weather {
+struct WeatherResponse {
     main: String,
     description: String,
 }
@@ -50,15 +54,32 @@ struct Wind {
 
 #[derive(Deserialize, Debug)]
 struct ResponseListItem {
-    #[serde(with = "my_date_format")]
+    #[serde(with = "open_weather_date_format")]
     dt_txt: NaiveDateTime,
     main: Main,
     pop: f64,
-    weather: Vec<Weather>,
+    weather: Vec<WeatherResponse>,
     wind: Wind,
 }
 
-const API_BASE_URL: &str = "https://api.openweathermap.org/data/2.5/forecast";
+impl ResponseListItem {
+    fn as_weather(&self) -> Result<Weather> {
+        match self.weather.first() {
+            None => Err(anyhow!("No weather response found")),
+            Some(weather) => Ok(Weather {
+                date: self.dt_txt,
+                title: weather.main.clone(),
+                description: weather.description.clone(),
+                probability_of_precipitation: self.pop,
+                temperature: self.main.temp,
+                feels_like: self.main.feels_like,
+                humidity: self.main.humidity,
+                wind_speed: self.wind.speed,
+                wind_direction: self.wind.deg,
+            }),
+        }
+    }
+}
 
 pub struct Forecast {
     url: Url,
@@ -83,7 +104,7 @@ impl Forecast {
         })
     }
 
-    pub async fn five_days(&self) -> Result<()> {
+    pub async fn five_days(&self, target: NaiveDateTime) -> Result<Weather> {
         let resp = Client::new().get(self.url.to_string()).send().await?;
         if !resp.status().is_success() {
             return Err(anyhow!(
@@ -95,19 +116,12 @@ impl Forecast {
         }
 
         let data: Response = resp.json().await?;
-        for item in data.list {
-            println!("{}", item.dt_txt);
-            println!("{}", item.pop);
-            println!("{}", item.main.temp);
-            println!("{}", item.main.feels_like);
-            println!("{}", item.main.humidity);
-            println!("{}", item.wind.speed);
-            println!("{}", item.wind.deg);
-            for weather in item.weather {
-                println!("{}", weather.main);
-                println!("{}", weather.description);
-            }
-        }
-        Ok(())
+        let item = data
+            .list
+            .iter()
+            .min_by_key(|a| a.dt_txt.signed_duration_since(target).num_seconds().abs());
+
+        item.ok_or(anyhow!("No weather data found"))
+            .and_then(|item| item.as_weather())
     }
 }

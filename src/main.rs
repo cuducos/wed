@@ -34,6 +34,6 @@ struct Args {
 async fn main() -> Result<()> {
     let args = Args::parse();
     let event = Event::new(args.when, args.location).await?;
-    event.weather().await?;
+    println!("{}", event.weather().await?);
     Ok(())
 }

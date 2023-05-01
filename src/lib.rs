@@ -5,6 +5,7 @@ use chrono::NaiveDateTime;
 
 mod forecast;
 mod geo;
+mod open_weather_date_format;
 
 const DATE_OUTPUT_FORMAT: &str = "%b %-d, %H:%M";
 
@@ -48,14 +49,12 @@ impl Event {
         true
     }
 
-    pub async fn weather(&self) -> Result<()> {
-        if !self.has_weather_forcast(true) {
-            return Ok(());
-        }
+    pub async fn weather(&self) -> Result<String> {
+        let weather = forecast::Forecast::new(self.latitude, self.longitude)?
+            .five_days(self.when)
+            .await?;
 
-        forecast::Forecast::new(self.latitude, self.longitude)?
-            .five_days()
-            .await
+        Ok(serde_json::to_string(&weather)?)
     }
 }
 
