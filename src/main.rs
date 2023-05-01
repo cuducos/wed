@@ -34,6 +34,10 @@ struct Args {
 async fn main() -> Result<()> {
     let args = Args::parse();
     let event = Event::new(args.when, args.location).await?;
+    if !event.has_weather_forcast(false) {
+        return Ok(());
+    }
+
     println!("{}", event.weather().await?);
     Ok(())
 }
