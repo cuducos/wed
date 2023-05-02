@@ -6,7 +6,6 @@
 
 ## TODO list
 
-- Persist named events in `~/.wed`
 - Automatically delete past events from `~/.wed` when the app is run
 - Implement flags for unit and language
 
@@ -42,15 +41,15 @@ $ wed --when "2022-07-09 09:00" --location "Ottawa, ON" --json
 }
 ```
 
-### :warning: Features to be implemented :warning:
-
-#### Save an event
+### Save an event
 
 Run `wed` with three arguments:
 
 ```console
 $ wed --name "National Capital Triathlon" --when "2022-07-09 09:00" --location "Ottawa, ON, Canada"
 ```
+
+### :warning: Features to be implemented :warning:
 
 #### Query saved events
 

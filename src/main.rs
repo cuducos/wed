@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use chrono::NaiveDateTime;
 use clap::Parser;
+use wed::persistence::{SavedEvent, SavedEvents};
 use wed::Event;
 
 const DATE_INPUT_FORMAT: &str = "%Y-%m-%d %H:%M";
@@ -48,5 +49,15 @@ async fn main() -> Result<()> {
     }
 
     println!("{}", event.weather(args.json).await?);
+
+    if let Some(name) = args.name {
+        let mut events = match SavedEvents::from_file() {
+            Ok(events) => events,
+            Err(_) => SavedEvents::new(),
+        };
+        events.add(
+                SavedEvent::from_event(&event, name));
+        events.to_file()?;
+    }
     Ok(())
 }

@@ -7,6 +7,7 @@ mod emoji;
 mod forecast;
 mod geo;
 mod open_weather_date_format;
+pub mod persistence;
 mod wind;
 
 const DATE_OUTPUT_FORMAT: &str = "%b %-d, %H:%M";
