@@ -35,16 +35,29 @@ impl Event {
     pub fn has_weather_forcast(&self, verbose: bool) -> bool {
         if self.days < 0 {
             if verbose {
-                println!("Skipping weather forecast for {} days ago.", -self.days);
+                match &self.name {
+                    Some(name) => println!(
+                        "Skipping weather forecast for {} since it was {} days ago.",
+                        name, -self.days
+                    ),
+                    None => println!("Skipping weather forecast for {} days ago.", -self.days),
+                };
             }
             return false;
         }
         if self.days > 5 {
             if verbose {
-                println!(
-                    "Skipping weather forecast for {} days in the future.",
-                    self.days
-                );
+                match &self.name {
+                    Some(name) => println!(
+                        "Skipping weather forecast for {} since it is {} days in the future.",
+                        name, self.days
+                    ),
+
+                    None => println!(
+                        "Skipping weather forecast for {} days in the future.",
+                        self.days
+                    ),
+                };
             }
             return false;
         }
