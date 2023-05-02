@@ -16,8 +16,13 @@ one. It's free.
 * Create an account at https://home.openweathermap.org/users
 * Get the key from https://home.openweathermap.org/api_keys";
 
+const DATE_OUTPUT_FORMAT: &str = "%b %-d, %H:%M";
+
 #[derive(Serialize, Debug)]
 pub struct Weather {
+    pub name: Option<String>,
+    pub location: String,
+
     #[serde(with = "open_weather_date_format")]
     pub date: NaiveDateTime,
     pub title: String,
@@ -36,8 +41,21 @@ impl Weather {
     }
 
     pub fn as_string(&self) -> Result<String> {
+        let heading = match &self.name {
+            Some(name) => format!(
+                "{} {} ({}) {} {}\n",
+                emoji::CALENDAR,
+                name,
+                self.date.format(DATE_OUTPUT_FORMAT),
+                emoji::GLOBE,
+                self.location
+            ),
+            None => "".to_string(),
+        };
+
         Ok(format!(
-            "{} {}°C (feels like {}°C) {} {}% chance of rain & {}% humidity {} {}km/h {}",
+            "{}{} {}°C (feels like {}°C) {} {}% chance of rain & {}% humidity {} {}km/h {}",
+            heading,
             emoji::emoji_for_weather(&self.title)?,
             self.temperature.round(),
             self.feels_like.round(),
@@ -86,10 +104,12 @@ struct ResponseListItem {
 }
 
 impl ResponseListItem {
-    fn as_weather(&self) -> Result<Weather> {
+    fn as_weather(&self, name: Option<String>, location: String) -> Result<Weather> {
         match self.weather.first() {
             None => Err(anyhow!("No weather response found")),
             Some(weather) => Ok(Weather {
+                name,
+                location,
                 date: self.dt_txt,
                 title: weather.main.clone(),
                 description: weather.description.clone(),
@@ -127,7 +147,12 @@ impl Forecast {
         })
     }
 
-    pub async fn five_days(&self, target: NaiveDateTime) -> Result<Weather> {
+    pub async fn five_days(
+        &self,
+        name: Option<String>,
+        location: String,
+        target: NaiveDateTime,
+    ) -> Result<Weather> {
         let resp = Client::new().get(self.url.to_string()).send().await?;
         if !resp.status().is_success() {
             return Err(anyhow!(
@@ -145,6 +170,6 @@ impl Forecast {
             .min_by_key(|a| a.dt_txt.signed_duration_since(target).num_seconds().abs());
 
         item.ok_or(anyhow!("No weather data found"))
-            .and_then(|item| item.as_weather())
+            .and_then(|item| item.as_weather(name, location))
     }
 }

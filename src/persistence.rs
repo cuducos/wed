@@ -22,6 +22,7 @@ pub struct SavedEvent {
 impl SavedEvent {
     pub fn to_event(&self) -> Event {
         Event {
+            name: Some(self.name.clone()),
             when: self.when,
             location: self.location.clone(),
             latitude: self.latitude,
@@ -30,14 +31,19 @@ impl SavedEvent {
         }
     }
 
-    pub fn from_event(event: &Event, name: String) -> Self {
-        Self {
+    pub fn from_event(event: &Event) -> Result<Self> {
+        let name = match &event.name {
+            Some(name) => name.clone(),
+            None => return Err(anyhow!("Cannot create an event without a name")),
+        };
+
+        Ok(Self {
             name,
             location: event.location.clone(),
             latitude: event.latitude,
             longitude: event.longitude,
             when: event.when,
-        }
+        })
     }
 }
 

@@ -2,8 +2,6 @@
 
 `wed`'s idea is to automate something I do pretty often: once I register for a run or triathlon event, I frequently check the city's weather forecast for the race's date and time in the previous days.
 
-**:warning: THIS IS A WORK IN PROGRESS :warning:**
-
 ## TODO list
 
 - Automatically delete past events from `~/.wed` when the app is run
@@ -49,9 +47,7 @@ Run `wed` with three arguments:
 $ wed --name "National Capital Triathlon" --when "2022-07-09 09:00" --location "Ottawa, ON, Canada"
 ```
 
-### :warning: Features to be implemented :warning:
-
-#### Query saved events
+### Query saved events
 
 Run `wed` with no arguments:
 

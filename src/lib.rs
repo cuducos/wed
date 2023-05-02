@@ -1,5 +1,4 @@
 use anyhow::Result;
-use std::fmt;
 
 use chrono::NaiveDateTime;
 
@@ -10,9 +9,8 @@ mod open_weather_date_format;
 pub mod persistence;
 mod wind;
 
-const DATE_OUTPUT_FORMAT: &str = "%b %-d, %H:%M";
-
 pub struct Event {
+    pub name: Option<String>,
     when: NaiveDateTime,
     location: String,
     latitude: f64,
@@ -21,10 +19,11 @@ pub struct Event {
 }
 
 impl Event {
-    pub async fn new(when: NaiveDateTime, location: String) -> Result<Self> {
+    pub async fn new(name: Option<String>, when: NaiveDateTime, location: String) -> Result<Self> {
         let (latitude, longitude) = geo::coordinates(&location).await?;
 
         Ok(Self {
+            name,
             when,
             location,
             latitude,
@@ -54,7 +53,7 @@ impl Event {
 
     pub async fn weather(&self, json: bool) -> Result<String> {
         let weather = forecast::Forecast::new(self.latitude, self.longitude)?
-            .five_days(self.when)
+            .five_days(self.name.clone(), self.location.clone(), self.when)
             .await?;
 
         if json {
@@ -62,18 +61,5 @@ impl Event {
         } else {
             weather.as_string()
         }
-    }
-}
-
-impl fmt::Display for Event {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "Where\t{} ({}, {})\nDate\t{}",
-            self.location,
-            self.latitude,
-            self.longitude,
-            self.when.format(DATE_OUTPUT_FORMAT),
-        )
     }
 }

@@ -2,8 +2,8 @@ use anyhow::{anyhow, Result};
 
 pub const PRECIPITATION: &str = "☔";
 pub const WIND: &str = "💨";
-// pub const CALENDAR: &str = "🗓";
-// pub const GLOBE: &str = "🌐";
+pub const CALENDAR: &str = "🗓";
+pub const GLOBE: &str = "🌐";
 
 pub fn emoji_for_weather(name: &str) -> Result<&str> {
     Ok(match name {
