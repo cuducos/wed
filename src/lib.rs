@@ -1,12 +1,13 @@
 use anyhow::Result;
-
 use chrono::NaiveDateTime;
+use forecast::Units;
+
+pub mod forecast;
+pub mod persistence;
 
 mod emoji;
-mod forecast;
 mod geo;
 mod open_weather_date_format;
-pub mod persistence;
 mod wind;
 
 pub struct Event {
@@ -64,8 +65,8 @@ impl Event {
         true
     }
 
-    pub async fn weather(&self, json: bool) -> Result<String> {
-        let weather = forecast::Forecast::new(self.latitude, self.longitude)?
+    pub async fn weather(&self, units: &Units, json: bool) -> Result<String> {
+        let weather = forecast::Forecast::new(self.latitude, self.longitude, units)?
             .five_days(self.name.clone(), self.location.clone(), self.when)
             .await?;
 

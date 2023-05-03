@@ -2,6 +2,7 @@ use std::env;
 
 use anyhow::{anyhow, Context, Result};
 use chrono::NaiveDateTime;
+use clap::ValueEnum;
 use reqwest::{Client, Url};
 use serde::{self, Deserialize, Serialize};
 
@@ -18,10 +19,17 @@ one. It's free.
 
 const DATE_OUTPUT_FORMAT: &str = "%b %-d, %H:%M";
 
+#[derive(Debug, Clone, ValueEnum, Serialize)]
+pub enum Units {
+    Metric,
+    Imperial,
+}
+
 #[derive(Serialize, Debug)]
 pub struct Weather {
     pub name: Option<String>,
     pub location: String,
+    pub units: Units,
 
     #[serde(with = "open_weather_date_format")]
     pub date: NaiveDateTime,
@@ -32,7 +40,7 @@ pub struct Weather {
     pub feels_like: f64,
     pub humidity: f64,
     pub wind_speed: f64,
-    pub wind_direction: f64, // TODO: convert to N/E/S/W
+    pub wind_direction: f64,
 }
 
 impl Weather {
@@ -52,18 +60,29 @@ impl Weather {
             ),
             None => "".to_string(),
         };
+        let temperature = match self.units {
+            Units::Metric => "C",
+            Units::Imperial => "F",
+        };
+        let speed = match self.units {
+            Units::Metric => "m/s",
+            Units::Imperial => "mph",
+        };
 
         Ok(format!(
-            "{}{} {}°C (feels like {}°C) {} {}% chance of rain & {}% humidity {} {}km/h {}",
+            "{}{} {}°{} (feels like {}°{}) {} {}% chance of rain & {}% humidity {} {}{} {}",
             heading,
             emoji::emoji_for_weather(&self.title)?,
             self.temperature.round(),
+            temperature,
             self.feels_like.round(),
+            temperature,
             emoji::PRECIPITATION,
             (self.probability_of_precipitation * 100.0).round(),
             self.humidity,
             emoji::WIND,
             self.wind_speed.round(),
+            speed,
             wind::wind_direction(self.wind_direction)?,
         ))
     }
@@ -104,12 +123,13 @@ struct ResponseListItem {
 }
 
 impl ResponseListItem {
-    fn as_weather(&self, name: Option<String>, location: String) -> Result<Weather> {
+    fn as_weather(&self, name: Option<String>, location: String, units: &Units) -> Result<Weather> {
         match self.weather.first() {
             None => Err(anyhow!("No weather response found")),
             Some(weather) => Ok(Weather {
                 name,
                 location,
+                units: units.clone(),
                 date: self.dt_txt,
                 title: weather.main.clone(),
                 description: weather.description.clone(),
@@ -125,23 +145,30 @@ impl ResponseListItem {
 }
 
 pub struct Forecast {
+    units: Units,
     url: Url,
 }
 
 impl Forecast {
-    pub fn new(latitude: f64, longitude: f64) -> Result<Self> {
+    pub fn new(latitude: f64, longitude: f64, units: &Units) -> Result<Self> {
         let api_key = env::var("OPEN_WEATHER_API_KEY").with_context(|| MISSING_API_KEY_ERROR)?;
+        let units_value = match units {
+            Units::Metric => "metric",
+            Units::Imperial => "imperial",
+        }
+        .to_string();
 
         Ok(Self {
+            units: units.clone(),
             url: Url::parse_with_params(
                 API_BASE_URL,
                 &[
                     ("appid", api_key),
+                    ("units", units_value),
                     ("lat", latitude.to_string()),
                     ("lon", longitude.to_string()),
                     ("cnt", "40".to_string()),
-                    ("units", "metric".to_string()), // TODO: CLI option for unit
-                    ("lang", "en".to_string()),      // TODO: CLI option for language
+                    ("lang", "en".to_string()),
                 ],
             )?,
         })
@@ -170,6 +197,6 @@ impl Forecast {
             .min_by_key(|a| a.dt_txt.signed_duration_since(target).num_seconds().abs());
 
         item.ok_or(anyhow!("No weather data found"))
-            .and_then(|item| item.as_weather(name, location))
+            .and_then(|item| item.as_weather(name, location, &self.units))
     }
 }

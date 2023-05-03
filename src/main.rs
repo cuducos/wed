@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Context, Result};
 use chrono::NaiveDateTime;
 use clap::Parser;
+use wed::forecast::Units;
 use wed::persistence::{SavedEvent, SavedEvents};
 use wed::Event;
 
@@ -35,9 +36,12 @@ struct Args {
     // Output more information about the internal state of the application
     #[arg(short, long)]
     verbose: bool,
+
+    #[arg(short, long)]
+    units: Option<Units>,
 }
 
-async fn show_existing_events(verbose: bool, json: bool) -> Result<()> {
+async fn show_existing_events(units: Units, verbose: bool, json: bool) -> Result<()> {
     let saved = match SavedEvents::from_file() {
         Ok(events) => events,
         Err(_) => SavedEvents::new(),
@@ -48,21 +52,21 @@ async fn show_existing_events(verbose: bool, json: bool) -> Result<()> {
     for data in saved.events {
         let event = data.to_event();
         if event.has_weather_forcast(verbose) {
-            println!("{}", event.weather(json).await?);
+            println!("{}", event.weather(&units, json).await?);
         }
     }
     Ok(())
 }
 
-async fn show_adhoc_event(event: &Event, verbose: bool, json: bool) -> Result<()> {
+async fn show_adhoc_event(event: &Event, units: &Units, verbose: bool, json: bool) -> Result<()> {
     if event.has_weather_forcast(verbose) {
-        println!("{}", event.weather(json).await?);
+        println!("{}", event.weather(units, json).await?);
     }
     Ok(())
 }
 
-async fn show_and_save_event(event: Event, verbose: bool, json: bool) -> Result<()> {
-    show_adhoc_event(&event, verbose, json).await?;
+async fn show_and_save_event(event: Event, units: &Units, verbose: bool, json: bool) -> Result<()> {
+    show_adhoc_event(&event, units, verbose, json).await?;
     if event.name.is_some() {
         let mut events = match SavedEvents::from_file() {
             Ok(events) => events,
@@ -77,8 +81,9 @@ async fn show_and_save_event(event: Event, verbose: bool, json: bool) -> Result<
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
+    let units = args.units.unwrap_or(Units::Metric);
     if args.name.is_none() && args.when.is_none() && args.location.is_none() {
-        return show_existing_events(args.verbose, args.json).await;
+        return show_existing_events(units, args.verbose, args.json).await;
     }
     if args.when.is_none() || args.location.is_none() {
         return Err(anyhow!(
@@ -93,8 +98,8 @@ async fn main() -> Result<()> {
     )
     .await?;
     match args.name {
-        Some(_) => show_and_save_event(event, args.verbose, args.json).await,
-        None => show_adhoc_event(&event, args.verbose, args.json).await,
+        Some(_) => show_and_save_event(event, &units, args.verbose, args.json).await,
+        None => show_adhoc_event(&event, &units, args.verbose, args.json).await,
     }?;
     Ok(())
 }
