@@ -1,7 +1,7 @@
 use std::{fs::File, io::BufReader, path::PathBuf};
 
 use anyhow::{anyhow, Result};
-use chrono::NaiveDateTime;
+use chrono::{Local, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 
 use crate::{open_weather_date_format, Event};
@@ -66,10 +66,19 @@ impl SavedEvents {
     pub fn from_file() -> Result<Self> {
         let file = File::open(storage_path()?)?;
         let reader = BufReader::new(file);
-        Ok(serde_json::from_reader(reader)?)
+        let mut saved: Self = serde_json::from_reader(reader)?;
+
+        let count = saved.events.len();
+        saved.cleanup();
+        if saved.events.len() != count {
+            saved.to_file()?;
+        }
+
+        Ok(saved)
     }
 
-    pub fn to_file(&self) -> Result<()> {
+    pub fn to_file(&mut self) -> Result<()> {
+        self.cleanup();
         let file = File::create(storage_path()?)?;
         Ok(serde_json::to_writer(file, self)?)
     }
@@ -79,6 +88,11 @@ impl SavedEvents {
             return;
         }
         self.events.push(event);
+    }
+
+    fn cleanup(&mut self) {
+        let now = Local::now().naive_local();
+        self.events.retain(|event| event.when > now);
     }
 }
 

@@ -2,10 +2,6 @@
 
 `wed`'s idea is to automate something I do pretty often: once I register for a run or triathlon event, I frequently check the city's weather forecast for the race's date and time in the previous days.
 
-## TODO list
-
-- Automatically delete past events from `~/.wed` when the app is run
-
 ## Requirements
 
 You will need an [OpenWeather API key](https://home.openweathermap.org/api_keys) as en environment variable called `OPEN_WEATHER_API_KEY`.
