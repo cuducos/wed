@@ -5,7 +5,7 @@
 ## TODO list
 
 - Automatically delete past events from `~/.wed` when the app is run
-- Implement flags for unit and language
+- Implement flags for unit
 
 ## Requirements
 
