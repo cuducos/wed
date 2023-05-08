@@ -1,47 +1,49 @@
-use anyhow::{anyhow, Context, Result};
-use chrono::NaiveDateTime;
-use clap::Parser;
+use anyhow::{anyhow, Result};
+use clap::{Parser, Subcommand};
 use wed::forecast::Units;
 use wed::persistence::{SavedEvent, SavedEvents};
 use wed::Event;
 
-const DATE_INPUT_FORMAT: &str = "%Y-%m-%d %H:%M";
-
-fn date_parser(value: &str) -> Result<NaiveDateTime> {
-    NaiveDateTime::parse_from_str(value, DATE_INPUT_FORMAT).with_context(|| {
-        format!("Failed to parse date, it should be in the format {DATE_INPUT_FORMAT}: {value}")
-    })
-}
-
 /// Weather on the Event Day
-#[derive(Parser, Debug)]
+#[derive(Parser)]
 #[command(author, version, about, long_about=None)]
 struct Args {
-    #[arg( short, long, value_parser = date_parser , help= format!("Event date in the {DATE_INPUT_FORMAT} format"))]
-    when: Option<NaiveDateTime>,
-
-    /// Event location (city and country; province or state is optional)
-    #[arg(short, long)]
-    location: Option<String>,
-
-    /// Event name
-    #[arg(short, long)]
-    name: Option<String>,
-
-    /// Outputs the weather forcast for the event day in JSON format (instead
-    /// of the human-readable version)
+    /// Outputs the weather forcast in JSON format (instead of the human-readable version)
     #[arg(short, long)]
     json: bool,
 
-    // Output more information about the internal state of the application
+    /// Output more information about the internal state of the application
     #[arg(short, long)]
     verbose: bool,
 
+    /// Units to use for the weather forecast
     #[arg(short, long)]
     units: Option<Units>,
+
+    #[command(subcommand)]
+    command: Option<Commands>,
 }
 
-async fn show_existing_events(units: Units, verbose: bool, json: bool) -> Result<()> {
+#[derive(Subcommand)]
+enum Commands {
+    /// List saved events
+    List {},
+
+    /// Delete a saved event
+    Delete { name: String },
+
+    /// Save an event
+    Save {
+        name: String,
+        location: String,
+        when: String,
+    },
+
+    /// Show the forecast for a given location, date and time
+    Forecast { location: String, when: String },
+}
+
+async fn load_saved_events() -> Result<SavedEvents> {
     let saved = match SavedEvents::from_file() {
         Ok(events) => events,
         Err(_) => SavedEvents::new(),
@@ -49,57 +51,86 @@ async fn show_existing_events(units: Units, verbose: bool, json: bool) -> Result
     if saved.events.is_empty() {
         return Err(anyhow!("No events saved."));
     }
-    for data in saved.events {
-        let event = data.to_event();
-        if event.has_weather_forcast(verbose) {
-            println!("{}", event.weather(&units, json).await?);
+    Ok(saved)
+}
+
+async fn list_saved_events() -> Result<()> {
+    for event in load_saved_events().await?.events {
+        println!(
+            "{} {}, {}",
+            event.when.format(wed::DATE_INPUT_FORMAT),
+            event.name,
+            event.location
+        );
+    }
+    Ok(())
+}
+
+async fn forecast_for_saved_events(units: &Units, verbose: bool, json: bool) -> Result<()> {
+    let saved = load_saved_events()
+        .await?
+        .events
+        .into_iter()
+        .map(|data| data.to_event())
+        .filter(|event| event.has_weather_forcast(verbose));
+
+    let mut output: Vec<String> = Vec::new();
+    for event in saved {
+        output.push(event.weather(units, json).await?);
+    }
+
+    if !output.is_empty() {
+        if json {
+            println!("[{}]", output.join(","));
+        } else {
+            println!("{}", output.join("\n"));
         }
     }
     Ok(())
 }
 
-async fn show_adhoc_event(event: &Event, units: &Units, verbose: bool, json: bool) -> Result<()> {
+async fn forecast_for(event: &Event, units: &Units, json: bool, verbose: bool) -> Result<()> {
     if event.has_weather_forcast(verbose) {
         println!("{}", event.weather(units, json).await?);
     }
     Ok(())
 }
 
-async fn show_and_save_event(event: Event, units: &Units, verbose: bool, json: bool) -> Result<()> {
-    show_adhoc_event(&event, units, verbose, json).await?;
-    if event.name.is_some() {
-        let mut events = match SavedEvents::from_file() {
-            Ok(events) => events,
-            Err(_) => SavedEvents::new(),
-        };
-        events.add(SavedEvent::from_event(&event)?);
-        events.to_file()?;
-    }
-    Ok(())
+async fn save_event(event: &Event) -> Result<()> {
+    let mut events = match SavedEvents::from_file() {
+        Ok(events) => events,
+        Err(_) => SavedEvents::new(),
+    };
+    events.add(SavedEvent::from_event(event)?);
+    events.to_file()
+}
+
+async fn delete_event(name: &str) -> Result<()> {
+    let mut saved = load_saved_events().await?;
+    saved.events.retain(|event| event.name != name);
+    saved.to_file()
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
     let units = args.units.unwrap_or(Units::Metric);
-    if args.name.is_none() && args.when.is_none() && args.location.is_none() {
-        return show_existing_events(units, args.verbose, args.json).await;
+    match &args.command {
+        None => forecast_for_saved_events(&units, args.verbose, args.json).await,
+        Some(Commands::List {}) => list_saved_events().await,
+        Some(Commands::Delete { name }) => delete_event(name).await,
+        Some(Commands::Forecast { location, when }) => {
+            let event = Event::new(None, when.clone(), location.clone()).await?;
+            forecast_for(&event, &units, args.json, args.verbose).await
+        }
+        Some(Commands::Save {
+            name,
+            location,
+            when,
+        }) => {
+            let event = Event::new(Some(name.clone()), when.clone(), location.clone()).await?;
+            forecast_for(&event, &units, args.json, args.verbose).await?;
+            save_event(&event).await
+        }
     }
-    if args.when.is_none() || args.location.is_none() {
-        return Err(anyhow!(
-            "Event date and location are required when using an event name."
-        ));
-    }
-
-    let event = Event::new(
-        args.name.clone(),
-        args.when.unwrap(),
-        args.location.unwrap(),
-    )
-    .await?;
-    match args.name {
-        Some(_) => show_and_save_event(event, &units, args.verbose, args.json).await,
-        None => show_adhoc_event(&event, &units, args.verbose, args.json).await,
-    }?;
-    Ok(())
 }

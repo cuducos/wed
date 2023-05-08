@@ -93,6 +93,7 @@ impl SavedEvents {
     fn cleanup(&mut self) {
         let now = Local::now().naive_local();
         self.events.retain(|event| event.when > now);
+        self.events.sort_by(|a, b| a.when.cmp(&b.when));
     }
 }
 

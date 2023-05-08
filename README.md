@@ -6,45 +6,61 @@
 
 You will need an [OpenWeather API key](https://home.openweathermap.org/api_keys) as en environment variable called `OPEN_WEATHER_API_KEY`.
 
-## Use cases
+## Install
 
-Try `wed --help`.
-
-### Query a date and time followed by a location
-
-Run `wed` with two arguments:
+With [`cargo`](https://www.rust-lang.org/) installed:
 
 ```console
-$ wed --when "2022-07-09 09:00" --location "Ottawa, ON"
+$ cargo install --path .
+```
+
+## Use cases
+
+`wed` and its sub-commands that output weather information accepts the options `--units`, `--json` and `--verbose` **before** the subcommand (e.g. `wed --json` or `wed --json forecast "Ottawa, ON" "2022-07-09 09:00"`).
+
+Try `wed --help` for datails.
+
+### Weather forecast for any location, date and time
+
+Run `wed forecast` with two arguments:
+
+```console
+$ wed forecast "Ottawa, ON" "2022-07-09 09:00"
 🌤 26°C (feels like 27°C)  ☔ 40% chance of rain & 10% humidity 💨 4.2 km/h W
 ```
 
 Or with a JSON output:
 
 ```console
-$ wed --when "2022-07-09 09:00" --location "Ottawa, ON" --json
+$ wed --json forecast "Ottawa, ON" "2022-07-09 09:00"
 {
-    "temperature": 26,
-    "feels_like": 27,
-    "chance_of_rain": 0.4,
-    "humidity": 0.1,
-    "wind_speed": 4.2,
-    "wind_direction": "W",
-    "description": "scattered clouds",
+    "name": null,
+    "location": "Ottawa, ON",
+    "units": "Metric",
+    "date": "2022-07-09 09:00:00",
+    "title": "Clear",
+    "description": "clear sky",
+    "probability_of_precipitation": 0.4,
+    "temperature": 24.96,
+    "feels_like": 22.75,
+    "humidity": 67.0,
+    "wind_speed": 2.62,
+    "wind_direction": 283.0
 }
 ```
 
 ### Save an event
 
-Run `wed` with three arguments:
+Run `wed save` with three arguments:
 
 ```console
-$ wed --name "National Capital Triathlon" --when "2022-07-09 09:00" --location "Ottawa, ON, Canada"
+$ wed save "National Capital Triathlon" "Ottawa, ON" "2022-07-09 09:00"
+🌤 26°C (feels like 27°C)  ☔ 40% chance of rain & 10% humidity 💨 4.2 km/h W
 ```
 
-### Query saved events
+### Weather forecast for saved events
 
-Run `wed` with no arguments:
+Run `wed` with no sub-command or arguments:
 
 ```console
 $ wed
@@ -58,20 +74,32 @@ Or with a JSON output:
 $ wed --json
 [
     {
-        "name": "National Capital Triathlon",
-        "when": "2022-07-09 09:00:00",
-        "location": "Ottawa, ON, Canada",
-        "weather": {
-            "temperature": 26,
-            "feels_like": 27,
-            "chance_of_rain": 0.4,
-            "humidity": 0.1,
-            "wind_speed": 4.2,
-            "wind_direction": "W",
-            "description": "scattered clouds",
-        }
+        "name": null,
+        "location": "Ottawa, ON",
+        "units": "Metric",
+        "date": "2022-07-09 09:00:00",
+        "title": "Clear",
+        "description": "clear sky",
+        "probability_of_precipitation": 0.4,
+        "temperature": 24.96,
+        "feels_like": 22.75,
+        "humidity": 67.0,
+        "wind_speed": 2.62,
+        "wind_direction": 283.0
     }
 ]
+```
+
+### List all saved events
+
+Run `wed list` with no arguments.
+
+### Delete a saved event
+
+Run `wed delete` with one argument, the name of the event:
+
+```console
+$ wed delete "National Capital Triathlon"
 ```
 
 ## Data sources

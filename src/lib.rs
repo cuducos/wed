@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use chrono::NaiveDateTime;
 use forecast::Units;
 
@@ -10,6 +10,14 @@ mod geo;
 mod open_weather_date_format;
 mod wind;
 
+pub const DATE_INPUT_FORMAT: &str = "%Y-%m-%d %H:%M";
+
+fn date_parser(value: &String) -> Result<NaiveDateTime> {
+    NaiveDateTime::parse_from_str(value, DATE_INPUT_FORMAT).with_context(|| {
+        format!("Failed to parse date and time, it should be in the format {DATE_INPUT_FORMAT}: {value}")
+    })
+}
+
 pub struct Event {
     pub name: Option<String>,
     when: NaiveDateTime,
@@ -20,7 +28,8 @@ pub struct Event {
 }
 
 impl Event {
-    pub async fn new(name: Option<String>, when: NaiveDateTime, location: String) -> Result<Self> {
+    pub async fn new(name: Option<String>, date: String, location: String) -> Result<Self> {
+        let when = date_parser(&date)?;
         let (latitude, longitude) = geo::coordinates(&location).await?;
 
         Ok(Self {
