@@ -5,15 +5,17 @@ pub const WIND: &str = "💨";
 pub const CALENDAR: &str = "🗓️";
 pub const GLOBE: &str = "🌐";
 
-pub fn emoji_for_weather(name: &str) -> Result<&str> {
-    Ok(match name {
-        "Thunderstorm" => "🌩️",
-        "Drizzle" => "🌧️",
-        "Rain" => "🌧️",
-        "Snow" => "🌨️",
-        "Clear" => "☀️",
-        "Atmosphere" => "☁️",
-        "Clouds" => "⛅",
-        _ => return Err(anyhow!("Unknown weather: {}", name)),
-    })
+pub fn emoji_for_weather(code: i8) -> Result<String> {
+    Ok(match code {
+        0..=1 => "☀️",
+        2..=3 => "⛅",
+        45..=48 => "☁️",
+        51..=67 => "🌧️",
+        71..=77 => "🌨️",
+        80..=82 => "🌧️",
+        85..=86 => "🌨️",
+        95..=99 => "🌩️",
+        _ => return Err(anyhow!("Unknown weather code: {}", code)),
+    }
+    .to_string())
 }

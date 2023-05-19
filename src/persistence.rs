@@ -4,7 +4,7 @@ use anyhow::{anyhow, Result};
 use chrono::{Local, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 
-use crate::{open_weather_date_format, Event};
+use crate::{date_format, Event};
 
 const FILE_NAME: &str = ".wed";
 
@@ -15,7 +15,7 @@ pub struct SavedEvent {
     pub latitude: f64,
     pub longitude: f64,
 
-    #[serde(with = "open_weather_date_format")]
+    #[serde(with = "date_format")]
     pub when: NaiveDateTime,
 }
 

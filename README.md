@@ -2,10 +2,6 @@
 
 `wed`'s idea is to automate something I do pretty often: once I register for a run or triathlon event, I frequently check the city's weather forecast for the race's date and time in the previous days.
 
-## Requirements
-
-You will need an [OpenWeather API key](https://home.openweathermap.org/api_keys) as en environment variable called `OPEN_WEATHER_API_KEY`.
-
 ## Install
 
 With [`cargo`](https://www.rust-lang.org/) installed:
@@ -35,17 +31,17 @@ Or with a JSON output:
 $ wed --json forecast "Ottawa, ON" "2022-07-09 09:00"
 {
     "name": null,
-    "location": "Ottawa, ON",
+    "location": "Ottawa, CA",
     "units": "Metric",
-    "date": "2022-07-09 09:00:00",
-    "title": "Clear",
-    "description": "clear sky",
-    "probability_of_precipitation": 0.4,
-    "temperature": 24.96,
-    "feels_like": 22.75,
-    "humidity": 67.0,
-    "wind_speed": 2.62,
-    "wind_direction": 283.0
+    "icon": "\u26c5",
+    "date": "2023-05-28 07:00:00",
+    "weather_code": 3,
+    "probability_of_precipitation": 13,
+    "temperature": 17.4,
+    "feels_like": 17.8,
+    "humidity": 90,
+    "wind_speed": 10.8,
+    "wind_direction": 244
 }
 ```
 
@@ -75,17 +71,17 @@ $ wed --json
 [
     {
         "name": null,
-        "location": "Ottawa, ON",
+        "location": "Ottawa, CA",
         "units": "Metric",
-        "date": "2022-07-09 09:00:00",
-        "title": "Clear",
-        "description": "clear sky",
-        "probability_of_precipitation": 0.4,
-        "temperature": 24.96,
-        "feels_like": 22.75,
-        "humidity": 67.0,
-        "wind_speed": 2.62,
-        "wind_direction": 283.0
+        "icon": "\u26c5",
+        "date": "2023-05-28 07:00:00",
+        "weather_code": 3,
+        "probability_of_precipitation": 13,
+        "temperature": 17.4,
+        "feels_like": 17.8,
+        "humidity": 90,
+        "wind_speed": 10.8,
+        "wind_direction": 244
     }
 ]
 ```
@@ -102,15 +98,15 @@ Run `wed delete` with one argument, the name of the event:
 $ wed delete "National Capital Triathlon"
 ```
 
-## Data sources
+## Data
+
+### Sources
 
 * Convertion of location (city/country) to a latitude and longitude: [Nominatin](https://wiki.openstreetmap.org/wiki/Nominatim)
-* Weather forecast:
-   * If _t - 5 days_: [3h forecast](https://openweathermap.org/forecast5)
-   * There are other endpoints (hourly closer to the event, daily up to 30 days from the event), but since they are paid, `wed` doesn't use them
+* Weather forecast, only when _t - 16 days_: [hourly from Open Meteo](https://open-meteo.com/en/docs)
 
-## Data management and persistence
+### Persistence
 
+* Saved events are saved in simple file `~/.wed`
 * The app automaticaly deletes past events when the app is run
 * The app igonres events that are more than 5 days ahead
-* Data is persisted in simple file `~/.wed`

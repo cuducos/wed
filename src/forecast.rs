@@ -1,22 +1,14 @@
-use std::env;
-
-use anyhow::{anyhow, Context, Result};
-use chrono::NaiveDateTime;
+use anyhow::{anyhow, Result};
+use chrono::{NaiveDateTime, ParseError};
 use clap::ValueEnum;
 use reqwest::{Client, Url};
 use serde::{self, Deserialize, Serialize};
 
-use crate::emoji;
-use crate::open_weather_date_format;
+use crate::date_format::{self, OPEN_METEO_DATE_FORMAT};
+use crate::emoji::{self, emoji_for_weather};
 use crate::wind;
 
-const API_BASE_URL: &str = "https://api.openweathermap.org/data/2.5/forecast";
-const MISSING_API_KEY_ERROR: &str = "Couldn't find the OpenWeather API key as an
-environment variable called OPEN_WEATHER_API_KEY. You need to create
-one. It's free.
-* Create an account at https://home.openweathermap.org/users
-* Get the key from https://home.openweathermap.org/api_keys";
-
+const API_URL: &str = "https://api.open-meteo.com/v1/forecast";
 const DATE_OUTPUT_FORMAT: &str = "%b %-d, %H:%M";
 
 #[derive(Debug, Clone, ValueEnum, Serialize)]
@@ -25,22 +17,39 @@ pub enum Units {
     Imperial,
 }
 
+impl Units {
+    pub fn temperature(&self) -> String {
+        match self {
+            Units::Metric => "celsius",
+            Units::Imperial => "fahrenheit",
+        }
+        .to_string()
+    }
+    pub fn speed(&self) -> String {
+        match self {
+            Units::Metric => "kmh",
+            Units::Imperial => "mph",
+        }
+        .to_string()
+    }
+}
+
 #[derive(Serialize, Debug)]
 pub struct Weather {
     pub name: Option<String>,
     pub location: String,
     pub units: Units,
+    pub icon: String,
 
-    #[serde(with = "open_weather_date_format")]
+    #[serde(with = "date_format")]
     pub date: NaiveDateTime,
-    pub title: String,
-    pub description: String,
-    pub probability_of_precipitation: f64,
+    pub weather_code: i8,
+    pub probability_of_precipitation: Option<i8>,
     pub temperature: f64,
     pub feels_like: f64,
-    pub humidity: f64,
+    pub humidity: i8,
     pub wind_speed: f64,
-    pub wind_direction: f64,
+    pub wind_direction: i32,
 }
 
 impl Weather {
@@ -65,20 +74,20 @@ impl Weather {
             Units::Imperial => "F",
         };
         let speed = match self.units {
-            Units::Metric => "m/s",
+            Units::Metric => "km/h",
             Units::Imperial => "mph",
         };
 
         Ok(format!(
             "{}{} {}°{} (feels like {}°{}) {} {}% chance of rain & {}% humidity {} {}{} {}",
             heading,
-            emoji::emoji_for_weather(&self.title)?,
+            emoji::emoji_for_weather(self.weather_code)?,
             self.temperature.round(),
             temperature,
             self.feels_like.round(),
             temperature,
             emoji::PRECIPITATION,
-            (self.probability_of_precipitation * 100.0).round(),
+            self.probability_of_precipitation.unwrap_or(0),
             self.humidity,
             emoji::WIND,
             self.wind_speed.round(),
@@ -90,57 +99,59 @@ impl Weather {
 
 #[derive(Deserialize, Debug)]
 struct Response {
-    list: Vec<ResponseListItem>,
+    hourly: Hourly,
 }
 
 #[derive(Deserialize, Debug)]
-struct Main {
-    temp: f64,
-    feels_like: f64,
-    humidity: f64,
+struct Hourly {
+    time: Vec<String>,
+    temperature_2m: Vec<f64>,
+    apparent_temperature: Vec<f64>,
+    relativehumidity_2m: Vec<i8>,
+    precipitation_probability: Vec<Option<i8>>,
+    windspeed_10m: Vec<f64>,
+    winddirection_10m: Vec<i32>,
+    weathercode: Vec<i8>,
 }
 
-#[derive(Deserialize, Debug)]
-struct WeatherResponse {
-    main: String,
-    description: String,
-}
+impl Hourly {
+    fn as_weather(
+        &self,
+        target: NaiveDateTime,
+        name: Option<String>,
+        location: String,
+        units: &Units,
+    ) -> Result<Weather> {
+        let dates: Vec<NaiveDateTime> = self
+            .time
+            .iter()
+            .map(|t| NaiveDateTime::parse_from_str(t, OPEN_METEO_DATE_FORMAT))
+            .collect::<Result<Vec<NaiveDateTime>, ParseError>>()?;
+        let diffs: Vec<i64> = dates
+            .iter()
+            .map(|t| target - *t)
+            .map(|t| t.num_minutes().abs())
+            .collect();
+        let min_diff = diffs.iter().min().ok_or(anyhow!("No weather data found"))?;
+        let idx = diffs
+            .iter()
+            .position(|t| t == min_diff)
+            .ok_or(anyhow!("No weather data found"))?;
 
-#[derive(Deserialize, Debug)]
-struct Wind {
-    speed: f64,
-    deg: f64,
-}
-
-#[derive(Deserialize, Debug)]
-struct ResponseListItem {
-    #[serde(with = "open_weather_date_format")]
-    dt_txt: NaiveDateTime,
-    main: Main,
-    pop: f64,
-    weather: Vec<WeatherResponse>,
-    wind: Wind,
-}
-
-impl ResponseListItem {
-    fn as_weather(&self, name: Option<String>, location: String, units: &Units) -> Result<Weather> {
-        match self.weather.first() {
-            None => Err(anyhow!("No weather response found")),
-            Some(weather) => Ok(Weather {
-                name,
-                location,
-                units: units.clone(),
-                date: self.dt_txt,
-                title: weather.main.clone(),
-                description: weather.description.clone(),
-                probability_of_precipitation: self.pop,
-                temperature: self.main.temp,
-                feels_like: self.main.feels_like,
-                humidity: self.main.humidity,
-                wind_speed: self.wind.speed,
-                wind_direction: self.wind.deg,
-            }),
-        }
+        Ok(Weather {
+            name,
+            location,
+            weather_code: self.weathercode[idx],
+            icon: emoji_for_weather(self.weathercode[idx])?,
+            units: units.clone(),
+            date: dates[idx],
+            probability_of_precipitation: self.precipitation_probability[idx],
+            temperature: self.temperature_2m[idx],
+            feels_like: self.apparent_temperature[idx],
+            humidity: self.relativehumidity_2m[idx],
+            wind_speed: self.windspeed_10m[idx],
+            wind_direction: self.winddirection_10m[idx],
+        })
     }
 }
 
@@ -150,31 +161,39 @@ pub struct Forecast {
 }
 
 impl Forecast {
-    pub fn new(latitude: f64, longitude: f64, units: &Units) -> Result<Self> {
-        let api_key = env::var("OPEN_WEATHER_API_KEY").with_context(|| MISSING_API_KEY_ERROR)?;
-        let units_value = match units {
-            Units::Metric => "metric",
-            Units::Imperial => "imperial",
-        }
-        .to_string();
+    pub fn new(when: NaiveDateTime, latitude: f64, longitude: f64, units: &Units) -> Result<Self> {
+        let date = when.format("%Y-%m-%d");
+        let params = [
+            "temperature_2m",
+            "apparent_temperature",
+            "precipitation_probability",
+            "relativehumidity_2m",
+            "windspeed_10m",
+            "winddirection_10m",
+            "weathercode",
+        ]
+        .join(",");
 
         Ok(Self {
             units: units.clone(),
             url: Url::parse_with_params(
-                API_BASE_URL,
+                API_URL,
                 &[
-                    ("appid", api_key),
-                    ("units", units_value),
-                    ("lat", latitude.to_string()),
-                    ("lon", longitude.to_string()),
-                    ("cnt", "40".to_string()),
-                    ("lang", "en".to_string()),
+                    ("latitude", latitude.to_string()),
+                    ("longitude", longitude.to_string()),
+                    ("start_date", date.to_string()),
+                    ("end_date", date.to_string()),
+                    ("hourly", params),
+                    ("temperature_unit", units.temperature()),
+                    ("windspeed_10m", units.speed()),
+                    ("timezone", "auto".to_string()),
+                    ("forecast_days", "16".to_string()),
                 ],
             )?,
         })
     }
 
-    pub async fn five_days(
+    pub async fn weather_for(
         &self,
         name: Option<String>,
         location: String,
@@ -191,12 +210,6 @@ impl Forecast {
         }
 
         let data: Response = resp.json().await?;
-        let item = data
-            .list
-            .iter()
-            .min_by_key(|a| a.dt_txt.signed_duration_since(target).num_seconds().abs());
-
-        item.ok_or(anyhow!("No weather data found"))
-            .and_then(|item| item.as_weather(name, location, &self.units))
+        data.hourly.as_weather(target, name, location, &self.units)
     }
 }

@@ -1,12 +1,10 @@
 use anyhow::{anyhow, Result};
 
-static DEGREES: &[f64] = &[0.0, 45.0, 90.0, 135.0, 180.0, 225.0, 270.0, 315.0, 360.0];
+static DEGREES: &[i32] = &[0, 45, 90, 135, 180, 225, 270, 315, 360];
 static DIRECTIONS: &[&str] = &["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"];
 
-pub fn wind_direction(deg: f64) -> Result<String> {
-    let closest = DEGREES
-        .iter()
-        .min_by_key(|d| (deg - *d).abs().round() as i32);
+pub fn wind_direction(deg: i32) -> Result<String> {
+    let closest = DEGREES.iter().min_by_key(|d| (deg - *d).abs());
 
     match closest {
         None => Err(anyhow!("No closest direction found for {}", deg)),

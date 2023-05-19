@@ -5,9 +5,9 @@ use forecast::Units;
 pub mod forecast;
 pub mod persistence;
 
+mod date_format;
 mod emoji;
 mod geo;
-mod open_weather_date_format;
 mod wind;
 
 pub const DATE_INPUT_FORMAT: &str = "%Y-%m-%d %H:%M";
@@ -55,7 +55,7 @@ impl Event {
             }
             return false;
         }
-        if self.days > 5 {
+        if self.days > 16 {
             if verbose {
                 match &self.name {
                     Some(name) => println!(
@@ -75,8 +75,8 @@ impl Event {
     }
 
     pub async fn weather(&self, units: &Units, json: bool) -> Result<String> {
-        let weather = forecast::Forecast::new(self.latitude, self.longitude, units)?
-            .five_days(self.name.clone(), self.location.clone(), self.when)
+        let weather = forecast::Forecast::new(self.when, self.latitude, self.longitude, units)?
+            .weather_for(self.name.clone(), self.location.clone(), self.when)
             .await?;
 
         if json {
