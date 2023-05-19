@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 use wed::forecast::Units;
 use wed::persistence::{SavedEvent, SavedEvents};
@@ -43,19 +43,19 @@ enum Commands {
     Forecast { location: String, when: String },
 }
 
-async fn load_saved_events() -> Result<SavedEvents> {
+async fn load_saved_events(verbose: bool) -> Result<SavedEvents> {
     let saved = match SavedEvents::from_file() {
         Ok(events) => events,
         Err(_) => SavedEvents::new(),
     };
-    if saved.events.is_empty() {
-        return Err(anyhow!("No events saved."));
+    if saved.events.is_empty() && verbose {
+        println!("No events saved.");
     }
     Ok(saved)
 }
 
-async fn list_saved_events() -> Result<()> {
-    for event in load_saved_events().await?.events {
+async fn list_saved_events(verbose: bool) -> Result<()> {
+    for event in load_saved_events(verbose).await?.events {
         println!(
             "{} {}, {}",
             event.when.format(wed::DATE_INPUT_FORMAT),
@@ -67,7 +67,7 @@ async fn list_saved_events() -> Result<()> {
 }
 
 async fn forecast_for_saved_events(units: &Units, verbose: bool, json: bool) -> Result<()> {
-    let saved = load_saved_events()
+    let saved = load_saved_events(verbose)
         .await?
         .events
         .into_iter()
@@ -105,8 +105,8 @@ async fn save_event(event: &Event) -> Result<()> {
     events.to_file()
 }
 
-async fn delete_event(name: &str) -> Result<()> {
-    let mut saved = load_saved_events().await?;
+async fn delete_event(name: &str, verbose: bool) -> Result<()> {
+    let mut saved = load_saved_events(verbose).await?;
     saved.events.retain(|event| event.name != name);
     saved.to_file()
 }
@@ -117,8 +117,8 @@ async fn main() -> Result<()> {
     let units = args.units.unwrap_or(Units::Metric);
     match &args.command {
         None => forecast_for_saved_events(&units, args.verbose, args.json).await,
-        Some(Commands::List {}) => list_saved_events().await,
-        Some(Commands::Delete { name }) => delete_event(name).await,
+        Some(Commands::List {}) => list_saved_events(args.verbose).await,
+        Some(Commands::Delete { name }) => delete_event(name, args.verbose).await,
         Some(Commands::Forecast { location, when }) => {
             let event = Event::new(None, when.clone(), location.clone()).await?;
             forecast_for(&event, &units, args.json, args.verbose).await
