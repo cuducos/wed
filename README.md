@@ -25,7 +25,9 @@ $ wed forecast "Ottawa, ON" "2022-07-09 09:00"
 🌤 26°C (feels like 27°C)  ☔ 40% chance of rain & 10% humidity 💨 4.2 km/h W
 ```
 
-Or with a JSON output:
+<details>
+
+<summary>Or with a JSON output:</summary>
 
 ```console
 $ wed --json forecast "Ottawa, ON" "2022-07-09 09:00"
@@ -44,6 +46,8 @@ $ wed --json forecast "Ottawa, ON" "2022-07-09 09:00"
     "wind_direction": 244
 }
 ```
+    
+</details>
 
 ### Save an event
 
@@ -64,7 +68,9 @@ $ wed
 🌤 26°C (feels like 27°C) ☔ 40% chance of rain & 10% humidity 💨 4.2 km/h W
 ```
 
-Or with a JSON output:
+<details>
+
+<summary>Or with a JSON output:</summary>
 
 ```console
 $ wed --json
@@ -86,9 +92,7 @@ $ wed --json
 ]
 ```
 
-### List all saved events
-
-Run `wed list` with no arguments.
+</details>
 
 ### Delete a saved event
 
@@ -97,6 +101,10 @@ Run `wed delete` with one argument, the name of the event:
 ```console
 $ wed delete "National Capital Triathlon"
 ```
+
+### List all saved events
+
+Run `wed list` with no arguments.
 
 ## Data
 
