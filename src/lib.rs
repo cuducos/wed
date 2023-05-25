@@ -56,7 +56,7 @@ impl Event {
             }
             return false;
         }
-        if self.days > 16 {
+        if self.days >= 16 {
             if verbose {
                 match &self.name {
                     Some(name) => println!(
