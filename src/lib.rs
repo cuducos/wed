@@ -18,6 +18,7 @@ fn date_parser(value: &String) -> Result<NaiveDateTime> {
     })
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Event {
     pub name: Option<String>,
     when: NaiveDateTime,
