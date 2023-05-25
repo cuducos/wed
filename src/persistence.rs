@@ -71,7 +71,7 @@ impl SavedEvents {
         let count = saved.events.len();
         saved.cleanup();
         if saved.events.len() != count {
-            saved.to_file()?;
+            saved.to_file_path(path)?;
         }
 
         Ok(saved)
