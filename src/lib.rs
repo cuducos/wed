@@ -2,9 +2,9 @@ use anyhow::{Context, Result};
 use chrono::NaiveDateTime;
 use units::Units;
 
-pub mod forecast;
 pub mod persistence;
 pub mod units;
+pub mod weather;
 
 mod date_format;
 mod emoji;
@@ -77,7 +77,7 @@ impl Event {
     }
 
     pub async fn weather(&self, units: &Units, json: bool) -> Result<String> {
-        let weather = forecast::Weather::new(
+        let weather = weather::Weather::new(
             self.when,
             self.latitude,
             self.longitude,
