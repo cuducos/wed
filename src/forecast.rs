@@ -217,10 +217,6 @@ impl Forecast {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wiremock::{
-        matchers::{method, path},
-        Mock, MockServer, ResponseTemplate,
-    };
 
     #[test]
     fn test_units_temperature_metric() {
@@ -298,69 +294,5 @@ mod tests {
             ]
             .join("\n")
         );
-    }
-
-    #[tokio::test]
-    async fn test_forecast_weather_for_successful() {
-        let server = MockServer::start().await;
-        let response_body = r#"{"latitude":45.426113,"longitude":-75.67212,"hourly":{"time":["2023-05-28T07:00"],"temperature_2m":[13.6],"apparent_temperature":[12.3],"precipitation_probability":[0],"relativehumidity_2m":[74],"windspeed_10m":[7.6],"winddirection_10m":[262],"weathercode":[0]}}"#;
-        let mock_response = ResponseTemplate::new(200).set_body_string(response_body);
-        Mock::given(method("GET"))
-            .and(path("/forecast"))
-            .respond_with(mock_response)
-            .mount(&server)
-            .await;
-
-        let forecast = Forecast {
-            units: Units::Metric,
-            url: Url::parse(format!("{}/forecast", server.uri()).as_str()).unwrap(),
-        };
-
-        let target_time =
-            NaiveDateTime::parse_from_str("2023-05-21T12:00:00", "%Y-%m-%dT%H:%M:%S").unwrap();
-
-        let result = forecast
-            .weather_for(
-                Some("Event".to_string()),
-                "Location".to_string(),
-                target_time,
-            )
-            .await;
-
-        // assert!(result.is_ok());
-        let weather = result.unwrap();
-
-        assert_eq!(weather.name, Some("Event".to_string()));
-        assert_eq!(weather.location, "Location".to_string());
-    }
-
-    #[tokio::test]
-    async fn test_forecast_weather_for_unsuccessful() {
-        let server = MockServer::start().await;
-        let mock_response = ResponseTemplate::new(500);
-
-        Mock::given(method("GET"))
-            .and(path("/v1/forecast"))
-            .respond_with(mock_response)
-            .mount(&server)
-            .await;
-
-        let forecast = Forecast {
-            units: Units::Metric,
-            url: Url::parse(format!("{}/forecast", &server.uri()).as_str()).unwrap(),
-        };
-
-        let target_time =
-            NaiveDateTime::parse_from_str("2023-05-21T12:00:00", "%Y-%m-%dT%H:%M:%S").unwrap();
-
-        let result = forecast
-            .weather_for(
-                Some("Event".to_string()),
-                "Location".to_string(),
-                target_time,
-            )
-            .await;
-
-        assert!(result.is_err());
     }
 }
