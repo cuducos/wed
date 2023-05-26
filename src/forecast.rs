@@ -1,38 +1,15 @@
 use anyhow::{anyhow, Result};
 use chrono::{NaiveDateTime, ParseError};
-use clap::ValueEnum;
 use reqwest::{Client, Url};
 use serde::{self, Deserialize, Serialize};
 
 use crate::date_format::{self, OPEN_METEO_DATE_FORMAT};
 use crate::emoji::{self, emoji_for_weather};
+use crate::units::Units;
 use crate::wind;
 
 const API_URL: &str = "https://api.open-meteo.com/v1/forecast";
 const DATE_OUTPUT_FORMAT: &str = "%b %-d, %H:%M";
-
-#[derive(Debug, Clone, ValueEnum, Serialize)]
-pub enum Units {
-    Metric,
-    Imperial,
-}
-
-impl Units {
-    pub fn temperature(&self) -> String {
-        match self {
-            Units::Metric => "celsius",
-            Units::Imperial => "fahrenheit",
-        }
-        .to_string()
-    }
-    pub fn speed(&self) -> String {
-        match self {
-            Units::Metric => "kmh",
-            Units::Imperial => "mph",
-        }
-        .to_string()
-    }
-}
 
 #[derive(Serialize, Debug)]
 pub struct Weather {
@@ -206,30 +183,6 @@ impl Hourly {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_units_temperature_metric() {
-        let units = Units::Metric;
-        assert_eq!(units.temperature(), "celsius");
-    }
-
-    #[test]
-    fn test_units_temperature_imperial() {
-        let units = Units::Imperial;
-        assert_eq!(units.temperature(), "fahrenheit");
-    }
-
-    #[test]
-    fn test_units_speed_metric() {
-        let units = Units::Metric;
-        assert_eq!(units.speed(), "kmh");
-    }
-
-    #[test]
-    fn test_units_speed_imperial() {
-        let units = Units::Imperial;
-        assert_eq!(units.speed(), "mph");
-    }
 
     #[test]
     fn test_weather_as_json() {

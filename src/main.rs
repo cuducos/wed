@@ -1,7 +1,7 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use wed::forecast::Units;
 use wed::persistence::{SavedEvent, SavedEvents};
+use wed::units::Units;
 use wed::Event;
 
 /// Weather on the Event Day

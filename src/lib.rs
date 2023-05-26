@@ -1,9 +1,10 @@
 use anyhow::{Context, Result};
 use chrono::NaiveDateTime;
-use forecast::Units;
+use units::Units;
 
 pub mod forecast;
 pub mod persistence;
+pub mod units;
 
 mod date_format;
 mod emoji;
