@@ -53,6 +53,54 @@ pub struct Weather {
 }
 
 impl Weather {
+    pub async fn new(
+        when: NaiveDateTime,
+        latitude: f64,
+        longitude: f64,
+        units: &Units,
+        name: Option<String>,
+        location: String,
+    ) -> Result<Self> {
+        let date = when.format("%Y-%m-%d");
+        let params = [
+            "temperature_2m",
+            "apparent_temperature",
+            "precipitation_probability",
+            "relativehumidity_2m",
+            "windspeed_10m",
+            "winddirection_10m",
+            "weathercode",
+        ]
+        .join(",");
+        let url = Url::parse_with_params(
+            API_URL,
+            &[
+                ("latitude", latitude.to_string()),
+                ("longitude", longitude.to_string()),
+                ("start_date", date.to_string()),
+                ("end_date", date.to_string()),
+                ("temperature_unit", units.temperature()),
+                ("windspeed_10m", units.speed()),
+                ("timezone", "auto".to_string()),
+                ("forecast_days", "16".to_string()),
+                ("hourly", params),
+            ],
+        )?;
+
+        let resp = Client::new().get(url.to_string()).send().await?;
+        if !resp.status().is_success() {
+            return Err(anyhow!(
+                "HTTP request to {} returned {}: {}",
+                url,
+                resp.status(),
+                resp.text().await?
+            ));
+        }
+
+        let data: Response = resp.json().await?;
+        data.hourly.as_weather(when, name, location, units)
+    }
+
     pub fn as_json(&self) -> Result<String> {
         Ok(serde_json::to_string(&self)?)
     }
@@ -152,65 +200,6 @@ impl Hourly {
             wind_speed: self.windspeed_10m[idx],
             wind_direction: self.winddirection_10m[idx],
         })
-    }
-}
-
-pub struct Forecast {
-    units: Units,
-    url: Url,
-}
-
-impl Forecast {
-    pub fn new(when: NaiveDateTime, latitude: f64, longitude: f64, units: &Units) -> Result<Self> {
-        let date = when.format("%Y-%m-%d");
-        let params = [
-            "temperature_2m",
-            "apparent_temperature",
-            "precipitation_probability",
-            "relativehumidity_2m",
-            "windspeed_10m",
-            "winddirection_10m",
-            "weathercode",
-        ]
-        .join(",");
-
-        Ok(Self {
-            units: units.clone(),
-            url: Url::parse_with_params(
-                API_URL,
-                &[
-                    ("latitude", latitude.to_string()),
-                    ("longitude", longitude.to_string()),
-                    ("start_date", date.to_string()),
-                    ("end_date", date.to_string()),
-                    ("hourly", params),
-                    ("temperature_unit", units.temperature()),
-                    ("windspeed_10m", units.speed()),
-                    ("timezone", "auto".to_string()),
-                    ("forecast_days", "16".to_string()),
-                ],
-            )?,
-        })
-    }
-
-    pub async fn weather_for(
-        &self,
-        name: Option<String>,
-        location: String,
-        target: NaiveDateTime,
-    ) -> Result<Weather> {
-        let resp = Client::new().get(self.url.to_string()).send().await?;
-        if !resp.status().is_success() {
-            return Err(anyhow!(
-                "HTTP request to {} returned {}: {}",
-                &self.url,
-                resp.status(),
-                resp.text().await?
-            ));
-        }
-
-        let data: Response = resp.json().await?;
-        data.hourly.as_weather(target, name, location, &self.units)
     }
 }
 

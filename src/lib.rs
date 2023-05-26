@@ -76,9 +76,15 @@ impl Event {
     }
 
     pub async fn weather(&self, units: &Units, json: bool) -> Result<String> {
-        let weather = forecast::Forecast::new(self.when, self.latitude, self.longitude, units)?
-            .weather_for(self.name.clone(), self.location.clone(), self.when)
-            .await?;
+        let weather = forecast::Weather::new(
+            self.when,
+            self.latitude,
+            self.longitude,
+            units,
+            self.name.clone(),
+            self.location.clone(),
+        )
+        .await?;
 
         if json {
             weather.as_json()
