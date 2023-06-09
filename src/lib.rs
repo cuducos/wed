@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use chrono::NaiveDateTime;
 use units::Units;
+use weather::Weather;
 
 pub mod persistence;
 pub mod units;
@@ -22,7 +23,7 @@ fn date_parser(value: &String) -> Result<NaiveDateTime> {
 #[derive(Debug, PartialEq)]
 pub struct Event {
     pub name: Option<String>,
-    when: NaiveDateTime,
+    pub when: NaiveDateTime,
     location: String,
     latitude: f64,
     longitude: f64,
@@ -76,8 +77,8 @@ impl Event {
         true
     }
 
-    pub async fn weather(&self, units: &Units, json: bool) -> Result<String> {
-        let weather = weather::Weather::new(
+    pub async fn weather(&self, units: &Units) -> Result<Weather> {
+        Weather::new(
             self.when,
             self.latitude,
             self.longitude,
@@ -85,12 +86,6 @@ impl Event {
             self.name.clone(),
             self.location.clone(),
         )
-        .await?;
-
-        if json {
-            weather.as_json()
-        } else {
-            weather.as_string()
-        }
+        .await
     }
 }

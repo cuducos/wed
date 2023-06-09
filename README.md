@@ -46,7 +46,7 @@ $ wed --json forecast "Ottawa, ON" "2022-07-09 09:00"
     "wind_direction": 244
 }
 ```
-    
+
 </details>
 
 ### Save an event
@@ -93,6 +93,25 @@ $ wed --json
 ```
 
 </details>
+
+### macOS notification
+
+```console
+$ wed notify
+```
+
+[![](https://i.imgur.com/0tZjOVS.png)](https://imgur.com/a/pitcf3k)
+
+Running this command on a non-macOS system will output the same information as `wed --json notify`:
+
+```console
+$ wed --json notify
+{
+    "title": "🗓️ Formula Run (Jun 11, 09:00)",
+    "subtitle": "🌐 Ottawa, ON, Canada",
+    "body": "⛅ 18°C (feels like 17°C)\n☔ 0% chance of rain & 69% humidity\n💨 9km/h E"
+}
+```
 
 ### Delete a saved event
 

@@ -12,6 +12,13 @@ const API_URL: &str = "https://api.open-meteo.com/v1/forecast";
 const DATE_OUTPUT_FORMAT: &str = "%b %-d, %H:%M";
 
 #[derive(Serialize, Debug)]
+pub struct Notification {
+    pub title: String,
+    pub subtitle: String,
+    pub body: String,
+}
+
+#[derive(Serialize, Debug)]
 pub struct Weather {
     pub name: Option<String>,
     pub location: String,
@@ -81,22 +88,17 @@ impl Weather {
         data.hourly.as_weather(when, name, location, units)
     }
 
-    pub fn as_json(&self) -> Result<String> {
-        Ok(serde_json::to_string(&self)?)
-    }
-
-    pub fn as_string(&self) -> Result<String> {
-        let heading = match &self.name {
+    pub fn as_notification(&self) -> Result<Notification> {
+        let title = match &self.name {
             Some(name) => format!(
-                "{} {} ({}) {} {}\n",
+                "{} {} ({})",
                 emoji::CALENDAR,
                 name,
                 self.date.format(DATE_OUTPUT_FORMAT),
-                emoji::GLOBE,
-                self.location
             ),
             None => "".to_string(),
         };
+        let subtitle = format!("{} {}", emoji::GLOBE, self.location);
         let temperature = match self.units {
             Units::Metric => "C",
             Units::Imperial => "F",
@@ -105,10 +107,8 @@ impl Weather {
             Units::Metric => "km/h",
             Units::Imperial => "mph",
         };
-
-        Ok(format!(
-            "{}{} {}°{} (feels like {}°{}) {} {}% chance of rain & {}% humidity {} {}{} {}",
-            heading,
+        let body = format!(
+            "{} {}°{} (feels like {}°{})\n{} {}% chance of rain & {}% humidity\n{} {}{} {}",
             emoji::emoji_for_weather(self.weather_code)?,
             self.temperature.round(),
             temperature,
@@ -121,6 +121,25 @@ impl Weather {
             self.wind_speed.round(),
             speed,
             wind::wind_direction(self.wind_direction)?,
+        );
+
+        Ok(Notification {
+            title,
+            subtitle,
+            body,
+        })
+    }
+    pub fn as_string(&self, json: bool) -> Result<String> {
+        if json {
+            return Ok(serde_json::to_string(&self)?);
+        }
+
+        let notification = self.as_notification()?;
+        Ok(format!(
+            "{} {}\n{}",
+            notification.title,
+            notification.subtitle,
+            notification.body.replace('\n', " "),
         ))
     }
 }
@@ -207,7 +226,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_weather_as_json() {
+    fn test_weather_as_notification() {
         let weather = Weather {
             name: Some("Event".to_string()),
             location: "Location".to_string(),
@@ -223,12 +242,18 @@ mod tests {
             wind_direction: 180,
         };
 
-        let result = weather.as_json();
+        let result = weather.as_notification();
         assert!(result.is_ok());
-        assert_eq!(
-            result.unwrap(),
-            r#"{"name":"Event","location":"Location","units":"Metric","icon":"☀️","date":"2021-05-21 00:00:00","weather_code":1,"probability_of_precipitation":20,"temperature":25.0,"feels_like":28.0,"humidity":80,"wind_speed":10.0,"wind_direction":180}"#
-        );
+
+        let notification = result.unwrap();
+        assert_eq!(notification.title, "🗓️ Event (May 21, 00:00)");
+        assert_eq!(notification.subtitle, "🌐 Location");
+
+        let lines = notification.body.split('\n').collect::<Vec<&str>>();
+        assert_eq!(lines.len(), 3);
+        assert_eq!(lines[0], "☀️ 25°C (feels like 28°C)");
+        assert_eq!(lines[1], "☔ 20% chance of rain & 80% humidity");
+        assert_eq!(lines[2], "💨 10km/h S");
     }
 
     #[test]
@@ -248,7 +273,7 @@ mod tests {
             wind_direction: 180,
         };
 
-        let result = weather.as_string();
+        let result = weather.as_string(false);
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap(),
@@ -257,6 +282,31 @@ mod tests {
                 "☀️ 25°C (feels like 28°C) ☔ 20% chance of rain & 80% humidity 💨 10km/h S"
             ]
             .join("\n")
+        );
+    }
+
+    #[test]
+    fn test_weather_as_json() {
+        let weather = Weather {
+            name: Some("Event".to_string()),
+            location: "Location".to_string(),
+            units: Units::Metric,
+            icon: "☀️".to_string(),
+            date: NaiveDateTime::from_timestamp_opt(1621555200, 0).unwrap(),
+            weather_code: 1,
+            probability_of_precipitation: 20,
+            temperature: 25.0,
+            feels_like: 28.0,
+            humidity: 80,
+            wind_speed: 10.0,
+            wind_direction: 180,
+        };
+
+        let result = weather.as_string(true);
+        assert!(result.is_ok());
+        assert_eq!(
+            result.unwrap(),
+            r#"{"name":"Event","location":"Location","units":"Metric","icon":"☀️","date":"2021-05-21 00:00:00","weather_code":1,"probability_of_precipitation":20,"temperature":25.0,"feels_like":28.0,"humidity":80,"wind_speed":10.0,"wind_direction":180}"#
         );
     }
 }
