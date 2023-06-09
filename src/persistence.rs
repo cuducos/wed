@@ -252,10 +252,14 @@ mod tests {
         tmp.close().unwrap();
 
         assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().to_string(),
+
+        let error = result.unwrap_err().to_string();
+        let expected = if cfg!(windows) {
+            "The system cannot find the file specified. (os error 2)"
+        } else {
             "No such file or directory (os error 2)"
-        );
+        };
+        assert_eq!(error, expected);
     }
 
     #[test]
