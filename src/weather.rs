@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use chrono::{NaiveDateTime, ParseError};
+use chrono::NaiveDateTime;
 use reqwest::{Client, Url};
 use serde::{self, Deserialize, Serialize};
 
@@ -21,7 +21,7 @@ pub struct Weather {
     #[serde(with = "date_format")]
     pub date: NaiveDateTime,
     pub weather_code: i8,
-    pub probability_of_precipitation: Option<i8>,
+    pub probability_of_precipitation: i8,
     pub temperature: f64,
     pub feels_like: f64,
     pub humidity: i8,
@@ -74,7 +74,10 @@ impl Weather {
             ));
         }
 
-        let data: Response = resp.json().await?;
+        let data: Response = resp.json().await.map_err(|e| {
+            let message = format!("Failed to parse response JSON body from {url}: {e}");
+            anyhow!(message)
+        })?;
         data.hourly.as_weather(when, name, location, units)
     }
 
@@ -112,7 +115,7 @@ impl Weather {
             self.feels_like.round(),
             temperature,
             emoji::PRECIPITATION,
-            self.probability_of_precipitation.unwrap_or(0),
+            self.probability_of_precipitation,
             self.humidity,
             emoji::WIND,
             self.wind_speed.round(),
@@ -127,19 +130,44 @@ struct Response {
     hourly: Hourly,
 }
 
+#[derive(Debug)]
+struct HourlyItem {
+    time: NaiveDateTime,
+    temperature_2m: f64,
+    apparent_temperature: f64,
+    relativehumidity_2m: i8,
+    precipitation_probability: i8,
+    windspeed_10m: f64,
+    winddirection_10m: i32,
+    weathercode: i8,
+}
+
 #[derive(Deserialize, Debug)]
 struct Hourly {
     time: Vec<String>,
-    temperature_2m: Vec<f64>,
-    apparent_temperature: Vec<f64>,
-    relativehumidity_2m: Vec<i8>,
+    temperature_2m: Vec<Option<f64>>,
+    apparent_temperature: Vec<Option<f64>>,
+    relativehumidity_2m: Vec<Option<i8>>,
     precipitation_probability: Vec<Option<i8>>,
-    windspeed_10m: Vec<f64>,
-    winddirection_10m: Vec<i32>,
-    weathercode: Vec<i8>,
+    windspeed_10m: Vec<Option<f64>>,
+    winddirection_10m: Vec<Option<i32>>,
+    weathercode: Vec<Option<i8>>,
 }
 
 impl Hourly {
+    fn item(&self, idx: usize) -> Option<HourlyItem> {
+        Some(HourlyItem {
+            time: NaiveDateTime::parse_from_str(&self.time[idx], OPEN_METEO_DATE_FORMAT).ok()?,
+            temperature_2m: self.temperature_2m[idx]?,
+            apparent_temperature: self.apparent_temperature[idx]?,
+            relativehumidity_2m: self.relativehumidity_2m[idx]?,
+            precipitation_probability: self.precipitation_probability[idx].unwrap_or(0),
+            windspeed_10m: self.windspeed_10m[idx]?,
+            winddirection_10m: self.winddirection_10m[idx]?,
+            weathercode: self.weathercode[idx]?,
+        })
+    }
+
     fn as_weather(
         &self,
         target: NaiveDateTime,
@@ -147,35 +175,29 @@ impl Hourly {
         location: String,
         units: &Units,
     ) -> Result<Weather> {
-        let dates: Vec<NaiveDateTime> = self
-            .time
-            .iter()
-            .map(|t| NaiveDateTime::parse_from_str(t, OPEN_METEO_DATE_FORMAT))
-            .collect::<Result<Vec<NaiveDateTime>, ParseError>>()?;
-        let diffs: Vec<i64> = dates
-            .iter()
-            .map(|t| target - *t)
-            .map(|t| t.num_minutes().abs())
-            .collect();
-        let min_diff = diffs.iter().min().ok_or(anyhow!("No weather data found"))?;
-        let idx = diffs
-            .iter()
-            .position(|t| t == min_diff)
-            .ok_or(anyhow!("No weather data found"))?;
+        let item: HourlyItem = (0..self.time.len())
+            .filter_map(|idx| self.item(idx))
+            .map(|item| {
+                let diff = (target - item.time).num_minutes().abs();
+                (item, diff)
+            })
+            .min_by_key(|(_, diff)| *diff)
+            .ok_or(anyhow!("No weather data found"))?
+            .0;
 
         Ok(Weather {
             name,
             location,
-            weather_code: self.weathercode[idx],
-            icon: emoji_for_weather(self.weathercode[idx])?,
+            weather_code: item.weathercode,
+            icon: emoji_for_weather(item.weathercode)?,
             units: units.clone(),
-            date: dates[idx],
-            probability_of_precipitation: self.precipitation_probability[idx],
-            temperature: self.temperature_2m[idx],
-            feels_like: self.apparent_temperature[idx],
-            humidity: self.relativehumidity_2m[idx],
-            wind_speed: self.windspeed_10m[idx],
-            wind_direction: self.winddirection_10m[idx],
+            date: item.time,
+            probability_of_precipitation: item.precipitation_probability,
+            temperature: item.temperature_2m,
+            feels_like: item.apparent_temperature,
+            humidity: item.relativehumidity_2m,
+            wind_speed: item.windspeed_10m,
+            wind_direction: item.winddirection_10m,
         })
     }
 }
@@ -193,7 +215,7 @@ mod tests {
             icon: "☀️".to_string(),
             date: NaiveDateTime::from_timestamp_opt(1621555200, 0).unwrap(),
             weather_code: 1,
-            probability_of_precipitation: Some(20),
+            probability_of_precipitation: 20,
             temperature: 25.0,
             feels_like: 28.0,
             humidity: 80,
@@ -218,7 +240,7 @@ mod tests {
             icon: "☀️".to_string(),
             date: NaiveDateTime::from_timestamp_opt(1621555200, 0).unwrap(),
             weather_code: 1,
-            probability_of_precipitation: Some(20),
+            probability_of_precipitation: 20,
             temperature: 25.0,
             feels_like: 28.0,
             humidity: 80,
