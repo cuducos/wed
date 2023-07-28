@@ -85,8 +85,18 @@ async fn forecast_for_saved_events(units: &Units, verbose: bool, json: bool) -> 
         .filter(|event| event.has_weather_forcast(verbose));
 
     let mut output: Vec<String> = Vec::new();
+    let mut tasks = vec![];
+
     for event in saved {
-        output.push(event.weather(units).await?.as_string(json)?);
+        let unit = units.clone();
+        tasks.push(tokio::spawn(async move {
+            event.weather(&unit).await?.as_string(json)
+        }));
+    }
+
+    for task in tasks {
+        let result: Result<String> = task.await?;
+        output.push(result?);
     }
 
     if !output.is_empty() {
