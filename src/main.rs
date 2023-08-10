@@ -103,7 +103,7 @@ async fn forecast_for_saved_events(units: &Units, verbose: bool, json: bool) -> 
         if json {
             println!("[{}]", output.join(","));
         } else {
-            println!("{}", output.join("\n"));
+            println!("{}", output.join("\n\n"));
         }
     }
     Ok(())
