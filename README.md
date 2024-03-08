@@ -12,9 +12,9 @@ $ cargo install --path .
 
 ## Use cases
 
-`wed` and its sub-commands that output weather information accepts the options `--units`, `--json` and `--verbose` **before** the subcommand (e.g. `wed --json` or `wed --json forecast "Ottawa, ON" "2022-07-09 09:00"`).
+`wed` and its sub-commands that output weather information accept the options `--units`, `--json` and `--verbose` **before** the subcommand (e.g. `wed --json` or `wed --json forecast "Ottawa, ON" "2022-07-09 09:00"`).
 
-Try `wed --help` for datails.
+Try `wed --help` for details.
 
 ### Weather forecast for any location, date and time
 
@@ -129,11 +129,11 @@ Run `wed list` with no arguments.
 
 ### Sources
 
-* Convertion of location (city/country) to a latitude and longitude: [Nominatin](https://wiki.openstreetmap.org/wiki/Nominatim)
+* Conversion of location (city/country) to a latitude and longitude: [Nominatin](https://wiki.openstreetmap.org/wiki/Nominatim)
 * Weather forecast, only when _t - 16 days_: [hourly from Open Meteo](https://open-meteo.com/en/docs)
 
 ### Persistence
 
-* Saved events are saved in simple file `~/.wed`
-* The app automaticaly deletes past events when the app is run
-* The app igonres events that are more than 5 days ahead
+* Saved events are saved in a simple file `~/.wed.json`
+* The app automatically deletes past events when the app is run
+* The app ignores events that are more than 5 days ahead
