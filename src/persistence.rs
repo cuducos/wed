@@ -127,8 +127,8 @@ impl Default for SavedEvents {
 #[cfg(test)]
 mod tests {
     use super::*;
-use std::io::Write;
     use chrono::Duration;
+    use std::io::Write;
     use tempdir::TempDir;
 
     fn create_temp(name: &str) -> (PathBuf, TempDir) {
