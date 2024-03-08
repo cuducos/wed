@@ -6,7 +6,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{date_format, Event};
 
-const FILE_NAME: &str = ".wed";
+const OLD_FILE_NAME: &str = ".wed";
+const FILE_NAME: &str = ".wed.json";
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct SavedEvent {
@@ -58,12 +59,23 @@ fn default_storage_path() -> Result<PathBuf> {
     Ok(path)
 }
 
+fn update_file_name(path: &PathBuf) -> Result<()> {
+    if let Some(dir) = path.parent() {
+        let old = dir.join(OLD_FILE_NAME);
+        if old.exists() {
+            std::fs::rename(&old, path)?;
+        }
+    }
+    Ok(())
+}
+
 impl SavedEvents {
     pub fn new() -> Self {
         Self { events: vec![] }
     }
 
     pub fn from_file_path(path: &PathBuf) -> Result<Self> {
+        update_file_name(path)?;
         let file = File::open(path)?;
         let reader = BufReader::new(file);
         let mut saved: Self = serde_json::from_reader(reader)?;
@@ -82,6 +94,7 @@ impl SavedEvents {
     }
 
     pub fn to_file_path(&mut self, path: &PathBuf) -> Result<()> {
+        update_file_name(path)?;
         self.cleanup();
         let file = File::create(path)?;
         Ok(serde_json::to_writer(file, self)?)
@@ -114,13 +127,20 @@ impl Default for SavedEvents {
 #[cfg(test)]
 mod tests {
     use super::*;
+use std::io::Write;
     use chrono::Duration;
     use tempdir::TempDir;
 
-    fn create_temp_file() -> (PathBuf, TempDir) {
+    fn create_temp(name: &str) -> (PathBuf, TempDir) {
         let temp_dir = TempDir::new("wed-test-saved-events").unwrap();
-        let file_path = temp_dir.path().join(FILE_NAME);
+        let file_path = temp_dir.path().join(name);
         (file_path, temp_dir)
+    }
+    fn create_old_temp_file() -> (PathBuf, TempDir) {
+        create_temp(OLD_FILE_NAME)
+    }
+    fn create_temp_file() -> (PathBuf, TempDir) {
+        create_temp(FILE_NAME)
     }
 
     #[test]
@@ -367,5 +387,32 @@ mod tests {
 
         assert_eq!(saved_events.events.len(), 1);
         assert_eq!(saved_events.events[0].name, "Event 2");
+    }
+
+    #[test]
+    fn test_old_file_is_renamed_on_load() {
+        let (old_path, tmp) = create_old_temp_file();
+        let new_path = tmp.path().join(FILE_NAME);
+        File::create(&old_path)
+            .unwrap()
+            .write_all(b"{\"events\":[]}")
+            .unwrap();
+
+        assert!(SavedEvents::from_file_path(&new_path).is_ok());
+        assert!(new_path.exists());
+        assert!(!old_path.exists());
+        tmp.close().unwrap();
+    }
+
+    #[test]
+    fn test_old_file_is_renamed_on_save() {
+        let (old_path, tmp) = create_old_temp_file();
+        let new_path = tmp.path().join(FILE_NAME);
+        File::create(&old_path).unwrap();
+
+        assert!(SavedEvents::new().to_file_path(&new_path).is_ok());
+        assert!(new_path.exists());
+        assert!(!old_path.exists());
+        tmp.close().unwrap();
     }
 }
