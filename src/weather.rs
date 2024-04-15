@@ -66,7 +66,6 @@ impl Weather {
                 ("temperature_unit", units.temperature()),
                 ("windspeed_10m", units.speed()),
                 ("timezone", "auto".to_string()),
-                ("forecast_days", "16".to_string()),
                 ("hourly", params),
             ],
         )?;
