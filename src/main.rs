@@ -15,7 +15,7 @@ end run";
 #[derive(Parser)]
 #[command(author, version, about, long_about=None)]
 struct Args {
-    /// Outputs the weather forcast in JSON format (instead of the human-readable version)
+    /// Outputs the weather forecast in JSON format (instead of the human-readable version)
     #[arg(short, long)]
     json: bool,
 
@@ -82,7 +82,7 @@ async fn forecast_for_saved_events(units: &Units, verbose: bool, json: bool) -> 
         .events
         .into_iter()
         .map(|data| data.to_event())
-        .filter(|event| event.has_weather_forcast(verbose));
+        .filter(|event| event.has_weather_forecast(verbose));
 
     let mut output: Vec<String> = Vec::new();
     let mut tasks = vec![];
@@ -110,7 +110,7 @@ async fn forecast_for_saved_events(units: &Units, verbose: bool, json: bool) -> 
 }
 
 async fn forecast_for(event: &Event, units: &Units, json: bool, verbose: bool) -> Result<()> {
-    if event.has_weather_forcast(verbose) {
+    if event.has_weather_forecast(verbose) {
         println!("{}", event.weather(units).await?.as_string(json)?);
     }
     Ok(())
@@ -138,7 +138,7 @@ async fn load_notification(units: &Units, verbose: bool) -> Option<Notification>
         .events
         .into_iter()
         .map(|data| data.to_event())
-        .filter(|event| event.has_weather_forcast(verbose))
+        .filter(|event| event.has_weather_forecast(verbose))
         .collect::<Vec<Event>>();
     if events.is_empty() {
         return None;

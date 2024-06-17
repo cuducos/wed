@@ -45,7 +45,7 @@ impl Event {
         })
     }
 
-    pub fn has_weather_forcast(&self, verbose: bool) -> bool {
+    pub fn has_weather_forecast(&self, verbose: bool) -> bool {
         if self.days < 0 {
             if verbose {
                 match &self.name {
