@@ -231,7 +231,8 @@ mod tests {
             location: "Location".to_string(),
             units: Units::Metric,
             icon: "☀️".to_string(),
-            date: NaiveDateTime::from_timestamp_opt(1621555200, 0).unwrap(),
+            date: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S")
+                .unwrap(),
             weather_code: 1,
             probability_of_precipitation: 20,
             temperature: 25.0,
@@ -245,7 +246,7 @@ mod tests {
         assert!(result.is_ok());
 
         let notification = result.unwrap();
-        assert_eq!(notification.title, "🗓️ Event (May 21, 00:00)");
+        assert_eq!(notification.title, "🗓️ Event (May 20, 08:00)");
         assert_eq!(notification.subtitle, "🌐 Location");
 
         let lines = notification.body.split('\n').collect::<Vec<&str>>();
@@ -262,7 +263,7 @@ mod tests {
             location: "Location".to_string(),
             units: Units::Metric,
             icon: "☀️".to_string(),
-            date: NaiveDateTime::from_timestamp_opt(1621555200, 0).unwrap(),
+            date: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
             weather_code: 1,
             probability_of_precipitation: 20,
             temperature: 25.0,
@@ -277,7 +278,7 @@ mod tests {
         assert_eq!(
             result.unwrap(),
             [
-                "🗓️ Event (May 21, 00:00) 🌐 Location",
+                "🗓️ Event (May 20, 08:00) 🌐 Location",
                 "☀️ 25°C (feels like 28°C) ☔ 20% chance of rain & 80% humidity 💨 10km/h S"
             ]
             .join("\n")
@@ -291,7 +292,7 @@ mod tests {
             location: "Location".to_string(),
             units: Units::Metric,
             icon: "☀️".to_string(),
-            date: NaiveDateTime::from_timestamp_opt(1621555200, 0).unwrap(),
+            date: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
             weather_code: 1,
             probability_of_precipitation: 20,
             temperature: 25.0,
@@ -305,7 +306,7 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap(),
-            r#"{"name":"Event","location":"Location","units":"Metric","icon":"☀️","date":"2021-05-21 00:00:00","weather_code":1,"probability_of_precipitation":20,"temperature":25.0,"feels_like":28.0,"humidity":80,"wind_speed":10.0,"wind_direction":180}"#
+            r#"{"name":"Event","location":"Location","units":"Metric","icon":"☀️","date":"2021-05-20 08:00:00","weather_code":1,"probability_of_precipitation":20,"temperature":25.0,"feels_like":28.0,"humidity":80,"wind_speed":10.0,"wind_direction":180}"#
         );
     }
 }

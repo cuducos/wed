@@ -150,7 +150,7 @@ mod tests {
             location: "Event Location".to_string(),
             latitude: 42.0,
             longitude: -73.0,
-            when: NaiveDateTime::from_timestamp_opt(1621555200, 0).unwrap(),
+            when: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
         };
         let current_time = Local::now().naive_local();
         let expected_event = Event {
@@ -169,7 +169,8 @@ mod tests {
     fn test_saved_event_from_event_successful() {
         let event = Event {
             name: Some("Event Name".to_string()),
-            when: NaiveDateTime::from_timestamp_opt(1621555200, 0).unwrap(),
+            when: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S")
+                .unwrap(),
             location: "Event Location".to_string(),
             latitude: 42.0,
             longitude: -73.0,
@@ -180,7 +181,8 @@ mod tests {
             location: "Event Location".to_string(),
             latitude: 42.0,
             longitude: -73.0,
-            when: NaiveDateTime::from_timestamp_opt(1621555200, 0).unwrap(),
+            when: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S")
+                .unwrap(),
         };
         let result = SavedEvent::from_event(&event);
         assert!(result.is_ok());
@@ -193,7 +195,8 @@ mod tests {
     fn test_saved_event_from_event_without_name() {
         let event = Event {
             name: None,
-            when: NaiveDateTime::from_timestamp_opt(1621555200, 0).unwrap(),
+            when: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S")
+                .unwrap(),
             location: "Event Location".to_string(),
             latitude: 42.0,
             longitude: -73.0,
@@ -217,14 +220,14 @@ mod tests {
                 location: "Location 1".to_string(),
                 latitude: 42.0,
                 longitude: -73.0,
-                when: Local::now().naive_local() + Duration::days(1),
+                when: Local::now().naive_local() + Duration::try_days(1).unwrap(),
             },
             SavedEvent {
                 name: "Event 2".to_string(),
                 location: "Location 2".to_string(),
                 latitude: 42.0,
                 longitude: -73.0,
-                when: Local::now().naive_local() + Duration::days(2),
+                when: Local::now().naive_local() + Duration::try_days(2).unwrap(),
             },
         ];
         serde_json::to_writer(File::create(&path).unwrap(), &SavedEvents { events }).unwrap();
@@ -246,14 +249,14 @@ mod tests {
                 location: "Location 1".to_string(),
                 latitude: 42.0,
                 longitude: -73.0,
-                when: Local::now().naive_local() - Duration::days(1),
+                when: Local::now().naive_local() - Duration::try_days(1).unwrap(),
             },
             SavedEvent {
                 name: "Event 2".to_string(),
                 location: "Location 2".to_string(),
                 latitude: 42.0,
                 longitude: -73.0,
-                when: Local::now().naive_local() + Duration::days(2),
+                when: Local::now().naive_local() + Duration::try_days(2).unwrap(),
             },
         ];
         serde_json::to_writer(File::create(&path).unwrap(), &SavedEvents { events }).unwrap();
@@ -291,14 +294,14 @@ mod tests {
             location: "Location 1".to_string(),
             latitude: 42.0,
             longitude: -73.0,
-            when: Local::now().naive_local() + Duration::days(1),
+            when: Local::now().naive_local() + Duration::try_days(1).unwrap(),
         });
         saved_events.add(SavedEvent {
             name: "Event 2".to_string(),
             location: "Location 2".to_string(),
             latitude: 42.0,
             longitude: -73.0,
-            when: Local::now().naive_local() + Duration::days(2),
+            when: Local::now().naive_local() + Duration::try_days(2).unwrap(),
         });
         saved_events.to_file_path(&path).unwrap();
         let loaded = SavedEvents::from_file_path(&path).unwrap();
@@ -318,14 +321,14 @@ mod tests {
             location: "Location 1".to_string(),
             latitude: 42.0,
             longitude: -73.0,
-            when: Local::now().naive_local() - Duration::days(1),
+            when: Local::now().naive_local() - Duration::try_days(1).unwrap(),
         });
         saved_events.add(SavedEvent {
             name: "Event 2".to_string(),
             location: "Location 2".to_string(),
             latitude: 42.0,
             longitude: -73.0,
-            when: Local::now().naive_local() + Duration::days(2),
+            when: Local::now().naive_local() + Duration::try_days(2).unwrap(),
         });
         saved_events.to_file_path(&path).unwrap();
         let loaded = SavedEvents::from_file_path(&path).unwrap();
@@ -338,7 +341,7 @@ mod tests {
     #[test]
     fn test_saved_events_add() {
         let mut saved_events = SavedEvents::new();
-        let when = Local::now().naive_local() + Duration::days(1);
+        let when = Local::now().naive_local() + Duration::try_days(1).unwrap();
         saved_events.add(SavedEvent {
             name: "Event 1".to_string(),
             location: "Location 1".to_string(),
@@ -351,7 +354,7 @@ mod tests {
             location: "Location 2".to_string(),
             latitude: 42.0,
             longitude: -73.0,
-            when: Local::now().naive_local() + Duration::days(2),
+            when: Local::now().naive_local() + Duration::try_days(2).unwrap(),
         });
         saved_events.add(SavedEvent {
             name: "Event 1".to_string(),
@@ -373,14 +376,14 @@ mod tests {
             location: "Location 1".to_string(),
             latitude: 42.0,
             longitude: -73.0,
-            when: Local::now().naive_local() - Duration::days(1),
+            when: Local::now().naive_local() - Duration::try_days(1).unwrap(),
         });
         saved_events.add(SavedEvent {
             name: "Event 2".to_string(),
             location: "Location 2".to_string(),
             latitude: 42.0,
             longitude: -73.0,
-            when: Local::now().naive_local() + Duration::days(2),
+            when: Local::now().naive_local() + Duration::try_days(2).unwrap(),
         });
 
         saved_events.cleanup();
