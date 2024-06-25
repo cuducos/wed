@@ -2,6 +2,8 @@ use anyhow::{anyhow, Result};
 use reqwest::Client;
 use serde::Deserialize;
 
+use crate::persistence::SavedEvents;
+
 const NOMINATIM_URL: &str = "https://nominatim.openstreetmap.org/search.php?format=jsonv2&q=";
 
 #[derive(Deserialize, Debug)]
@@ -10,7 +12,21 @@ struct Location {
     lon: String,
 }
 
+fn coordinates_from_saved_events(query: &str) -> Option<(f64, f64)> {
+    if let Ok(saved) = SavedEvents::from_file() {
+        for event in saved.events.iter() {
+            if query == event.location {
+                return Some((event.latitude, event.longitude));
+            }
+        }
+    }
+    None
+}
+
 pub async fn coordinates(query: &str) -> Result<(f64, f64)> {
+    if let Some(coordinates) = coordinates_from_saved_events(query) {
+        return Ok(coordinates);
+    }
     let url = format!("{NOMINATIM_URL}{query}");
     let user_agent = format!(
         "{}/{} ({})",
