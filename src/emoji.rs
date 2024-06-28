@@ -5,7 +5,7 @@ pub const WIND: &str = "💨";
 pub const CALENDAR: &str = "🗓️";
 pub const GLOBE: &str = "🌐";
 
-pub fn emoji_for_weather(code: i8) -> Result<String> {
+pub fn emoji_for_weather<'a>(code: i8) -> Result<&'a str> {
     Ok(match code {
         0..=1 => "☀️",
         2..=3 => "⛅",
@@ -16,8 +16,7 @@ pub fn emoji_for_weather(code: i8) -> Result<String> {
         85..=86 => "🌨️",
         95..=99 => "🌩️",
         _ => return Err(anyhow!("Unknown weather code: {}", code)),
-    }
-    .to_string())
+    })
 }
 
 #[cfg(test)]

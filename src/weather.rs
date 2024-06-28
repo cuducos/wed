@@ -19,11 +19,11 @@ pub struct Notification {
 }
 
 #[derive(Serialize, Debug)]
-pub struct Weather {
+pub struct Weather<'a> {
     pub name: Option<String>,
     pub location: String,
     pub units: Units,
-    pub icon: String,
+    pub icon: &'a str,
 
     #[serde(with = "date_format")]
     pub date: NaiveDateTime,
@@ -36,7 +36,7 @@ pub struct Weather {
     pub wind_direction: i32,
 }
 
-impl Weather {
+impl<'a> Weather<'a> {
     pub async fn new(
         when: NaiveDateTime,
         latitude: f64,
@@ -186,13 +186,13 @@ impl Hourly {
         })
     }
 
-    fn as_weather(
+    fn as_weather<'a>(
         &self,
         target: NaiveDateTime,
         name: Option<String>,
         location: String,
         units: &Units,
-    ) -> Result<Weather> {
+    ) -> Result<Weather<'a>> {
         let item: HourlyItem = (0..self.time.len())
             .filter_map(|idx| self.item(idx))
             .map(|item| {
@@ -230,7 +230,7 @@ mod tests {
             name: Some("Event".to_string()),
             location: "Location".to_string(),
             units: Units::Metric,
-            icon: "☀️".to_string(),
+            icon: "☀️",
             date: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
             weather_code: 1,
             probability_of_precipitation: 20,
@@ -261,7 +261,7 @@ mod tests {
             name: Some("Event".to_string()),
             location: "Location".to_string(),
             units: Units::Metric,
-            icon: "☀️".to_string(),
+            icon: "☀️",
             date: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
             weather_code: 1,
             probability_of_precipitation: 20,
@@ -290,7 +290,7 @@ mod tests {
             name: Some("Event".to_string()),
             location: "Location".to_string(),
             units: Units::Metric,
-            icon: "☀️".to_string(),
+            icon: "☀️",
             date: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
             weather_code: 1,
             probability_of_precipitation: 20,
