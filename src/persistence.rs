@@ -169,8 +169,7 @@ mod tests {
     fn test_saved_event_from_event_successful() {
         let event = Event {
             name: Some("Event Name".to_string()),
-            when: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S")
-                .unwrap(),
+            when: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
             location: "Event Location".to_string(),
             latitude: 42.0,
             longitude: -73.0,
@@ -181,8 +180,7 @@ mod tests {
             location: "Event Location".to_string(),
             latitude: 42.0,
             longitude: -73.0,
-            when: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S")
-                .unwrap(),
+            when: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
         };
         let result = SavedEvent::from_event(&event);
         assert!(result.is_ok());
@@ -195,8 +193,7 @@ mod tests {
     fn test_saved_event_from_event_without_name() {
         let event = Event {
             name: None,
-            when: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S")
-                .unwrap(),
+            when: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
             location: "Event Location".to_string(),
             latitude: 42.0,
             longitude: -73.0,

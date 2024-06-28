@@ -231,8 +231,7 @@ mod tests {
             location: "Location".to_string(),
             units: Units::Metric,
             icon: "☀️".to_string(),
-            date: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S")
-                .unwrap(),
+            date: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
             weather_code: 1,
             probability_of_precipitation: 20,
             temperature: 25.0,
