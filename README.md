@@ -4,6 +4,18 @@
 
 ## Install
 
+You can download the binary for your platform from the [releases page](https://github.com/cuducos/wed/releases), for example:
+
+```console
+$ curl -LO https://github.com/cuducos/wed/releases/download/v0.0.3/wed-x86_64-unknown-linux-gnu.tar.gz
+$ tar -xzvf wed-x86_64-unknown-linux-gnu.tar.gz
+$ rm wed-x86_64-unknown-linux-gnu.tar.gz
+$ chmod a+x wed
+$ mv wed /usr/local/bin/
+```
+
+### Compile from source
+
 With [`cargo`](https://www.rust-lang.org/) installed:
 
 ```console
