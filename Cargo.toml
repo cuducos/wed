@@ -8,15 +8,14 @@ repository = "https://github.com/cuducos/wed"
 lto = true
 
 [dependencies]
-anyhow = "1.0.86"
-chrono = "0.4.38"
-clap = { version = "4.5.7", features = ["derive"] }
-home = "0.5.9"
-reqwest = { version = "0.12.4", features = ["json"] }
-serde = { version = "1.0.203", features = ["derive"] }
-serde_json = "1.0.117"
-tokio = { version = "1.38.0", features = ["macros", "rt-multi-thread"] }
+anyhow = "1.0.95"
+chrono = "0.4.39"
+clap = { version = "4.5.28", features = ["derive"] }
+home = "0.5.11"
+reqwest = { version = "0.12.12", features = ["json"] }
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.138"
+tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"] }
 
 [dev-dependencies]
-clippy = "0.0.302"
 tempdir = "0.3.7"
