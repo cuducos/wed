@@ -148,4 +148,4 @@ Run `wed list` with no arguments.
 
 * Saved events are saved in a simple file `~/.wed.json`
 * The app automatically deletes past events when the app is run
-* The app ignores events that are more than 5 days ahead
+* The app ignores events that are more than 16 days ahead
