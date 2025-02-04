@@ -36,7 +36,7 @@ pub struct Weather<'a> {
     pub wind_direction: i32,
 }
 
-impl<'a> Weather<'a> {
+impl Weather<'_> {
     pub async fn new(
         when: NaiveDateTime,
         latitude: f64,
