@@ -8,7 +8,7 @@ repository = "https://github.com/cuducos/wed"
 lto = true
 
 [dependencies]
-anyhow = "1.0.95"
+anyhow = "1.0.96"
 chrono = "0.4.40"
 clap = { version = "4.5.28", features = ["derive"] }
 home = "0.5.11"
