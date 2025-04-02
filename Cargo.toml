@@ -12,7 +12,7 @@ anyhow = "1.0.96"
 chrono = "0.4.40"
 clap = { version = "4.5.35", features = ["derive"] }
 home = "0.5.11"
-reqwest = { version = "0.12.12", features = ["json"] }
+reqwest = { version = "0.12.15", features = ["json"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.139"
 tokio = { version = "1.43.0", features = ["macros", "rt-multi-thread"] }
