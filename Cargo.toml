@@ -10,7 +10,7 @@ lto = true
 [dependencies]
 anyhow = "1.0.96"
 chrono = "0.4.40"
-clap = { version = "4.5.31", features = ["derive"] }
+clap = { version = "4.5.35", features = ["derive"] }
 home = "0.5.11"
 reqwest = { version = "0.12.12", features = ["json"] }
 serde = { version = "1.0.218", features = ["derive"] }
