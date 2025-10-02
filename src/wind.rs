@@ -5,9 +5,7 @@ static DIRECTIONS: &[&str] = &["N", "NE", "E", "SE", "S", "SW", "W", "NW", "N"];
 
 pub fn wind_direction(deg: i32) -> Result<String> {
     if !(0..=360).contains(&deg) {
-        return Err(anyhow!(
-            "Wind direction outside of the range 0..360: {deg}"
-        ));
+        return Err(anyhow!("Wind direction outside of the range 0..360: {deg}"));
     }
 
     let closest = DEGREES.iter().min_by_key(|d| (deg - *d).abs());
