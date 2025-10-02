@@ -77,7 +77,7 @@ impl Event {
         true
     }
 
-    pub async fn weather(&self, units: &Units) -> Result<Weather> {
+    pub async fn weather(&self, units: &Units) -> Result<Weather<'_>> {
         Weather::new(
             self.when,
             self.latitude,
