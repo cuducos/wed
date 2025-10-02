@@ -15,7 +15,7 @@ pub fn emoji_for_weather<'a>(code: i8) -> Result<&'a str> {
         80..=82 => "🌧️",
         85..=86 => "🌨️",
         95..=99 => "🌩️",
-        _ => return Err(anyhow!("Unknown weather code: {}", code)),
+        _ => return Err(anyhow!("Unknown weather code: {code}")),
     })
 }
 

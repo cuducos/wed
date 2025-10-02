@@ -51,7 +51,7 @@ pub async fn coordinates(query: &str) -> Result<(f64, f64)> {
 
     let results: Vec<Location> = resp.json().await?;
     if results.is_empty() {
-        return Err(anyhow!("No latitude/longitude found for {}", query));
+        return Err(anyhow!("No latitude/longitude found for {query}"));
     }
     Ok((
         results[0].lat.parse::<f64>()?,
