@@ -11,7 +11,7 @@ lto = true
 anyhow = "1.0.100"
 chrono = "0.4.42"
 clap = { version = "4.5.42", features = ["derive"] }
-home = "0.5.11"
+home = "0.5.12"
 reqwest = { version = "0.12.23", features = ["json"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.145"
