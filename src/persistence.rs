@@ -28,7 +28,6 @@ impl SavedEvent {
             location: self.location.clone(),
             latitude: self.latitude,
             longitude: self.longitude,
-            days: (self.when - chrono::Local::now().naive_local()).num_days(),
         }
     }
 
@@ -152,14 +151,12 @@ mod tests {
             longitude: -73.0,
             when: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
         };
-        let current_time = Local::now().naive_local();
         let expected_event = Event {
             name: Some("Event Name".to_string()),
             when: saved_event.when,
             location: "Event Location".to_string(),
             latitude: 42.0,
             longitude: -73.0,
-            days: (saved_event.when - current_time).num_days(),
         };
 
         assert_eq!(saved_event.to_event(), expected_event);
@@ -173,7 +170,6 @@ mod tests {
             location: "Event Location".to_string(),
             latitude: 42.0,
             longitude: -73.0,
-            days: 10,
         };
         let expected_saved_event = SavedEvent {
             name: "Event Name".to_string(),
@@ -197,7 +193,6 @@ mod tests {
             location: "Event Location".to_string(),
             latitude: 42.0,
             longitude: -73.0,
-            days: 10,
         };
 
         let result = SavedEvent::from_event(&event);

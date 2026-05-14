@@ -27,7 +27,6 @@ pub struct Event {
     location: String,
     latitude: f64,
     longitude: f64,
-    days: i64,
 }
 
 impl Event {
@@ -41,35 +40,36 @@ impl Event {
             location,
             latitude,
             longitude,
-            days: (when - chrono::Local::now().naive_local()).num_days(),
         })
     }
 
+    fn countdown_in_days(&self) -> i64 {
+        (self.when - chrono::Local::now().naive_local()).num_days()
+    }
+
     pub fn has_weather_forecast(&self, verbose: bool) -> bool {
-        if self.days < 0 {
+        let days = self.countdown_in_days();
+        if days < 0 {
             if verbose {
                 match &self.name {
                     Some(name) => println!(
                         "Skipping weather forecast for {} since it was {} days ago.",
-                        name, -self.days
+                        name, -days
                     ),
-                    None => println!("Skipping weather forecast for {} days ago.", -self.days),
+                    None => println!("Skipping weather forecast for {} days ago.", -days),
                 };
             }
             return false;
         }
-        if self.days >= 16 {
+        if days >= 16 {
             if verbose {
                 match &self.name {
                     Some(name) => println!(
                         "Skipping weather forecast for {} since it is {} days in the future.",
-                        name, self.days
+                        name, days
                     ),
 
-                    None => println!(
-                        "Skipping weather forecast for {} days in the future.",
-                        self.days
-                    ),
+                    None => println!("Skipping weather forecast for {} days in the future.", days),
                 };
             }
             return false;
