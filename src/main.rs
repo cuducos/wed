@@ -1,15 +1,9 @@
-use std::process::Command;
-
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use wed::persistence::{SavedEvent, SavedEvents};
 use wed::units::Units;
 use wed::weather::Notification;
 use wed::Event;
-
-const MACOS_NOTIFICATION_COMMAND: &str = "on run argv
-  display notification (item 3 of argv) with title (item 1 of argv) subtitle (item 2 of argv)
-end run";
 
 /// Weather on the Event Day
 #[derive(Parser)]
@@ -49,7 +43,7 @@ enum Commands {
     /// Show the forecast for a given location, date and time
     Forecast { location: String, when: String },
 
-    /// Display a notification on macOS (defaults to JSON output on other OS)
+    /// Display a desktop notification (defaults to JSON output on unsupported systems or on failure)
     Notify {},
 }
 
@@ -153,15 +147,12 @@ async fn json_notification(units: &Units, verbose: bool) -> Result<()> {
     Ok(())
 }
 
-async fn macos_notification(units: &Units) -> Result<()> {
+async fn send_notification(units: &Units) -> Result<()> {
     if let Some(notification) = load_notification(units, false).await {
-        Command::new("osascript")
-            .arg("-e")
-            .arg(MACOS_NOTIFICATION_COMMAND)
-            .arg(notification.title)
-            .arg(notification.subtitle)
-            .arg(notification.body)
-            .output()?;
+        notify_rust::Notification::new()
+            .summary(&notification.title)
+            .body(&format!("{}\n{}", notification.subtitle, notification.body))
+            .show()?;
     }
     Ok(())
 }
@@ -189,11 +180,15 @@ async fn main() -> Result<()> {
         }
 
         Some(Commands::Notify {}) => {
-            if cfg!(target_os = "macos") && !args.json {
-                macos_notification(&units).await
+            if !args.json {
+                if let Err(e) = send_notification(&units).await {
+                    eprintln!("Error displaying notification: {e}");
+                    json_notification(&units, args.verbose).await?;
+                }
             } else {
-                json_notification(&units, args.verbose).await
+                json_notification(&units, args.verbose).await?;
             }
+            Ok(())
         }
     }
 }

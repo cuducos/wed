@@ -106,7 +106,9 @@ $ wed --json
 
 </details>
 
-### macOS notification
+### Desktop notifications
+
+`wed` can also trigger a desktop notification:
 
 ```console
 $ wed notify
@@ -114,7 +116,7 @@ $ wed notify
 
 [![](https://i.imgur.com/0tZjOVS.png)](https://imgur.com/a/pitcf3k)
 
-Running this command on a non-macOS system will output the same information as `wed --json notify`:
+If the notification fails or is not supported by the operating system, it will output the same information as `wed --json notify`:
 
 ```console
 $ wed --json notify
