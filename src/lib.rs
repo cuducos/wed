@@ -14,7 +14,7 @@ mod wind;
 
 pub const DATE_INPUT_FORMAT: &str = "%Y-%m-%d %H:%M";
 
-fn date_parser(value: &String) -> Result<NaiveDateTime> {
+fn date_parser(value: &str) -> Result<NaiveDateTime> {
     NaiveDateTime::parse_from_str(value, DATE_INPUT_FORMAT).with_context(|| {
         format!("Failed to parse date and time, it should be in the format {DATE_INPUT_FORMAT}: {value}")
     })
