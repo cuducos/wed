@@ -1,12 +1,13 @@
 use anyhow::{anyhow, Result};
 use chrono::NaiveDateTime;
-use reqwest::{Client, Url};
+use reqwest::Url;
 use serde::{self, Deserialize, Serialize};
 
 use crate::date_format::{self, OPEN_METEO_DATE_FORMAT};
 use crate::emoji::{self, emoji_for_weather};
 use crate::units::Units;
 use crate::wind;
+use crate::WedClient;
 
 const API_URL: &str = "https://api.open-meteo.com/v1/forecast";
 const DATE_OUTPUT_FORMAT: &str = "%b %-d, %H:%M";
@@ -38,7 +39,7 @@ pub struct Weather<'a> {
 
 impl Weather<'_> {
     pub async fn new(
-        client: &Client,
+        client: &WedClient,
         when: NaiveDateTime,
         latitude: f64,
         longitude: f64,
@@ -71,18 +72,22 @@ impl Weather<'_> {
             ],
         )?;
 
-        let resp = client.get(url.to_string()).send().await?;
+        let resp = client.get(url).await?;
+
+        let url_for_error = resp.url().clone();
         if !resp.status().is_success() {
+            let status = resp.status();
+            let body = resp.text().await?;
             return Err(anyhow!(
                 "HTTP request to {} returned {}: {}",
-                url,
-                resp.status(),
-                resp.text().await?
+                url_for_error,
+                status,
+                body
             ));
         }
 
         let data: Response = resp.json().await.map_err(|e| {
-            let message = format!("Failed to parse response JSON body from {url}: {e}");
+            let message = format!("Failed to parse response JSON body from {url_for_error}: {e}");
             anyhow!(message)
         })?;
         data.hourly.as_weather(when, name, location, units)

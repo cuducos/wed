@@ -1,10 +1,9 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use reqwest::Client;
 use wed::persistence::{SavedEvent, SavedEvents};
 use wed::units::Units;
 use wed::weather::Notification;
-use wed::Event;
+use wed::{Event, WedClient};
 
 /// Weather on the Event Day
 #[derive(Parser)]
@@ -21,6 +20,10 @@ struct Args {
     /// Units to use for the weather forecast
     #[arg(short, long)]
     units: Option<Units>,
+
+    /// Number of retries for rate-limited requests
+    #[arg(short, long, default_value_t = 7)]
+    retries: u64,
 
     #[command(subcommand)]
     command: Option<Commands>,
@@ -72,7 +75,7 @@ async fn list_saved_events(verbose: bool) -> Result<()> {
 }
 
 async fn forecast_for_saved_events(
-    client: &Client,
+    client: &WedClient,
     units: &Units,
     verbose: bool,
     json: bool,
@@ -111,7 +114,7 @@ async fn forecast_for_saved_events(
 }
 
 async fn forecast_for(
-    client: &Client,
+    client: &WedClient,
     event: &Event,
     units: &Units,
     json: bool,
@@ -138,7 +141,11 @@ async fn delete_event(name: &str, verbose: bool) -> Result<()> {
     saved.to_file()
 }
 
-async fn load_notification(client: &Client, units: &Units, verbose: bool) -> Option<Notification> {
+async fn load_notification(
+    client: &WedClient,
+    units: &Units,
+    verbose: bool,
+) -> Option<Notification> {
     let events = load_saved_events(verbose)
         .await
         .ok()?
@@ -158,14 +165,14 @@ async fn load_notification(client: &Client, units: &Units, verbose: bool) -> Opt
         .ok()
 }
 
-async fn json_notification(client: &Client, units: &Units, verbose: bool) -> Result<()> {
+async fn json_notification(client: &WedClient, units: &Units, verbose: bool) -> Result<()> {
     if let Some(notification) = load_notification(client, units, verbose).await {
         println!("{}", serde_json::to_string(&notification)?);
     }
     Ok(())
 }
 
-async fn send_notification(client: &Client, units: &Units) -> Result<()> {
+async fn send_notification(client: &WedClient, units: &Units) -> Result<()> {
     if let Some(notification) = load_notification(client, units, false).await {
         notify_rust::Notification::new()
             .summary(&notification.title)
@@ -180,13 +187,7 @@ async fn main() -> Result<()> {
     let args = Args::parse();
     let units = args.units.unwrap_or(Units::Metric);
 
-    let user_agent = format!(
-        "{}/{} ({})",
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_PKG_VERSION"),
-        env!("CARGO_PKG_REPOSITORY"),
-    );
-    let client = Client::builder().user_agent(user_agent).build()?;
+    let client = WedClient::new(args.retries)?;
 
     match &args.command {
         None => forecast_for_saved_events(&client, &units, args.verbose, args.json).await,

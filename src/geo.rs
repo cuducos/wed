@@ -1,8 +1,9 @@
 use anyhow::{anyhow, Result};
-use reqwest::Client;
+use reqwest::Url;
 use serde::Deserialize;
 
 use crate::persistence::SavedEvents;
+use crate::WedClient;
 
 const NOMINATIM_URL: &str = "https://nominatim.openstreetmap.org/search.php?format=jsonv2&q=";
 
@@ -23,17 +24,17 @@ fn coordinates_from_saved_events(query: &str) -> Option<(f64, f64)> {
     None
 }
 
-pub async fn coordinates(client: &Client, query: &str) -> Result<(f64, f64)> {
+pub async fn coordinates(client: &WedClient, query: &str) -> Result<(f64, f64)> {
     if let Some(coordinates) = coordinates_from_saved_events(query) {
         return Ok(coordinates);
     }
-    let url = format!("{NOMINATIM_URL}{query}");
+    let url = Url::parse(&format!("{NOMINATIM_URL}{query}"))?;
 
-    let resp = client.get(&url).send().await?;
+    let resp = client.get(url.clone()).await?;
     if !resp.status().is_success() {
         return Err(anyhow!(
             "HTTP request to {} returned {}: {}",
-            &url,
+            url,
             resp.status(),
             resp.text().await?
         ));
