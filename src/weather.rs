@@ -38,6 +38,7 @@ pub struct Weather<'a> {
 
 impl Weather<'_> {
     pub async fn new(
+        client: &Client,
         when: NaiveDateTime,
         latitude: f64,
         longitude: f64,
@@ -70,7 +71,7 @@ impl Weather<'_> {
             ],
         )?;
 
-        let resp = Client::new().get(url.to_string()).send().await?;
+        let resp = client.get(url.to_string()).send().await?;
         if !resp.status().is_success() {
             return Err(anyhow!(
                 "HTTP request to {} returned {}: {}",

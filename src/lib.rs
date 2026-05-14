@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use chrono::NaiveDateTime;
+use reqwest::Client;
 use units::Units;
 use weather::Weather;
 
@@ -30,9 +31,14 @@ pub struct Event {
 }
 
 impl Event {
-    pub async fn new(name: Option<String>, date: String, location: String) -> Result<Self> {
+    pub async fn new(
+        client: &Client,
+        name: Option<String>,
+        date: String,
+        location: String,
+    ) -> Result<Self> {
         let when = date_parser(&date)?;
-        let (latitude, longitude) = geo::coordinates(&location).await?;
+        let (latitude, longitude) = geo::coordinates(client, &location).await?;
 
         Ok(Self {
             name,
@@ -77,8 +83,9 @@ impl Event {
         true
     }
 
-    pub async fn weather(&self, units: &Units) -> Result<Weather<'_>> {
+    pub async fn weather(&self, client: &Client, units: &Units) -> Result<Weather<'_>> {
         Weather::new(
+            client,
             self.when,
             self.latitude,
             self.longitude,

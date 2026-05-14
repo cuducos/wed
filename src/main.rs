@@ -1,5 +1,6 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use reqwest::Client;
 use wed::persistence::{SavedEvent, SavedEvents};
 use wed::units::Units;
 use wed::weather::Notification;
@@ -70,7 +71,12 @@ async fn list_saved_events(verbose: bool) -> Result<()> {
     Ok(())
 }
 
-async fn forecast_for_saved_events(units: &Units, verbose: bool, json: bool) -> Result<()> {
+async fn forecast_for_saved_events(
+    client: &Client,
+    units: &Units,
+    verbose: bool,
+    json: bool,
+) -> Result<()> {
     let saved = load_saved_events(verbose)
         .await?
         .events
@@ -83,8 +89,9 @@ async fn forecast_for_saved_events(units: &Units, verbose: bool, json: bool) -> 
 
     for event in saved {
         let unit = units.clone();
+        let client = client.clone();
         tasks.push(tokio::spawn(async move {
-            event.weather(&unit).await?.as_string(json)
+            event.weather(&client, &unit).await?.as_string(json)
         }));
     }
 
@@ -103,9 +110,15 @@ async fn forecast_for_saved_events(units: &Units, verbose: bool, json: bool) -> 
     Ok(())
 }
 
-async fn forecast_for(event: &Event, units: &Units, json: bool, verbose: bool) -> Result<()> {
+async fn forecast_for(
+    client: &Client,
+    event: &Event,
+    units: &Units,
+    json: bool,
+    verbose: bool,
+) -> Result<()> {
     if event.has_weather_forecast(verbose) {
-        println!("{}", event.weather(units).await?.as_string(json)?);
+        println!("{}", event.weather(client, units).await?.as_string(json)?);
     }
     Ok(())
 }
@@ -125,7 +138,7 @@ async fn delete_event(name: &str, verbose: bool) -> Result<()> {
     saved.to_file()
 }
 
-async fn load_notification(units: &Units, verbose: bool) -> Option<Notification> {
+async fn load_notification(client: &Client, units: &Units, verbose: bool) -> Option<Notification> {
     let events = load_saved_events(verbose)
         .await
         .ok()?
@@ -137,18 +150,23 @@ async fn load_notification(units: &Units, verbose: bool) -> Option<Notification>
     if events.is_empty() {
         return None;
     }
-    events[0].weather(units).await.ok()?.as_notification().ok()
+    events[0]
+        .weather(client, units)
+        .await
+        .ok()?
+        .as_notification()
+        .ok()
 }
 
-async fn json_notification(units: &Units, verbose: bool) -> Result<()> {
-    if let Some(notification) = load_notification(units, verbose).await {
+async fn json_notification(client: &Client, units: &Units, verbose: bool) -> Result<()> {
+    if let Some(notification) = load_notification(client, units, verbose).await {
         println!("{}", serde_json::to_string(&notification)?);
     }
     Ok(())
 }
 
-async fn send_notification(units: &Units) -> Result<()> {
-    if let Some(notification) = load_notification(units, false).await {
+async fn send_notification(client: &Client, units: &Units) -> Result<()> {
+    if let Some(notification) = load_notification(client, units, false).await {
         notify_rust::Notification::new()
             .summary(&notification.title)
             .body(&format!("{}\n{}", notification.subtitle, notification.body))
@@ -161,32 +179,42 @@ async fn send_notification(units: &Units) -> Result<()> {
 async fn main() -> Result<()> {
     let args = Args::parse();
     let units = args.units.unwrap_or(Units::Metric);
+
+    let user_agent = format!(
+        "{}/{} ({})",
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION"),
+        env!("CARGO_PKG_REPOSITORY"),
+    );
+    let client = Client::builder().user_agent(user_agent).build()?;
+
     match &args.command {
-        None => forecast_for_saved_events(&units, args.verbose, args.json).await,
+        None => forecast_for_saved_events(&client, &units, args.verbose, args.json).await,
         Some(Commands::List {}) => list_saved_events(args.verbose).await,
         Some(Commands::Delete { name }) => delete_event(name, args.verbose).await,
         Some(Commands::Forecast { location, when }) => {
-            let event = Event::new(None, when.clone(), location.clone()).await?;
-            forecast_for(&event, &units, args.json, args.verbose).await
+            let event = Event::new(&client, None, when.clone(), location.clone()).await?;
+            forecast_for(&client, &event, &units, args.json, args.verbose).await
         }
         Some(Commands::Save {
             name,
             location,
             when,
         }) => {
-            let event = Event::new(Some(name.clone()), when.clone(), location.clone()).await?;
-            forecast_for(&event, &units, args.json, args.verbose).await?;
+            let event =
+                Event::new(&client, Some(name.clone()), when.clone(), location.clone()).await?;
+            forecast_for(&client, &event, &units, args.json, args.verbose).await?;
             save_event(&event).await
         }
 
         Some(Commands::Notify {}) => {
             if !args.json {
-                if let Err(e) = send_notification(&units).await {
+                if let Err(e) = send_notification(&client, &units).await {
                     eprintln!("Error displaying notification: {e}");
-                    json_notification(&units, args.verbose).await?;
+                    json_notification(&client, &units, args.verbose).await?;
                 }
             } else {
-                json_notification(&units, args.verbose).await?;
+                json_notification(&client, &units, args.verbose).await?;
             }
             Ok(())
         }

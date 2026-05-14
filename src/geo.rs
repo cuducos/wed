@@ -23,23 +23,13 @@ fn coordinates_from_saved_events(query: &str) -> Option<(f64, f64)> {
     None
 }
 
-pub async fn coordinates(query: &str) -> Result<(f64, f64)> {
+pub async fn coordinates(client: &Client, query: &str) -> Result<(f64, f64)> {
     if let Some(coordinates) = coordinates_from_saved_events(query) {
         return Ok(coordinates);
     }
     let url = format!("{NOMINATIM_URL}{query}");
-    let user_agent = format!(
-        "{}/{} ({})",
-        env!("CARGO_PKG_NAME"),
-        env!("CARGO_PKG_VERSION"),
-        env!("CARGO_PKG_REPOSITORY"),
-    );
 
-    let resp = Client::new()
-        .get(&url)
-        .header("User-Agent", user_agent)
-        .send()
-        .await?;
+    let resp = client.get(&url).send().await?;
     if !resp.status().is_success() {
         return Err(anyhow!(
             "HTTP request to {} returned {}: {}",
