@@ -24,7 +24,7 @@ $ cargo install --path .
 
 ## Use cases
 
-`wed` and its sub-commands that output weather information accept the options `--units`, `--json` and `--verbose` **before** the subcommand (e.g. `wed --json` or `wed --json forecast "Ottawa, ON" "2022-07-09 09:00"`).
+`wed` and its sub-commands that output weather information accept the options `--units`, `--json`, `--chart` and `--verbose` **before** the subcommand (e.g. `wed --json` or `wed --json forecast "Ottawa, ON" "2022-07-09 09:00"`).
 
 Try `wed --help` for details.
 
@@ -70,6 +70,12 @@ $ wed save "National Capital Triathlon" "Ottawa, ON" "2022-07-09 09:00"
 🌤 26°C (feels like 27°C)  ☔ 40% chance of rain & 10% humidity 💨 4.2 km/h W
 ```
 
+You can also use the `--before` and `--after` flags (in hours) to save a specific time window for the event. By default, it saves the forecast starting 1 hour before and ending 3 hours after the event:
+
+```console
+$ wed save --before 2 --after 4 "National Capital Triathlon" "Ottawa, ON" "2022-07-09 09:00"
+```
+
 ### Weather forecast for saved events
 
 Run `wed` with no sub-command or arguments:
@@ -78,6 +84,12 @@ Run `wed` with no sub-command or arguments:
 $ wed
 🗓 National Capital Triathlon (Jul 7, 09:00) 🌐 Ottawa, ON, Canada
 🌤 26°C (feels like 27°C) ☔ 40% chance of rain & 10% humidity 💨 4.2 km/h W
+```
+
+Or with an hourly chart:
+
+```console
+$ wed --chart
 ```
 
 <details>

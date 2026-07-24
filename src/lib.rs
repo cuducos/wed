@@ -2,18 +2,21 @@ use anyhow::{Context, Result};
 use chrono::NaiveDateTime;
 use reqwest::{Client, Response, Url};
 use units::Units;
-use weather::Weather;
+use weather::{Weather, Window};
 
 pub mod persistence;
 pub mod units;
 pub mod weather;
 
+pub mod chart;
 mod date_format;
 mod emoji;
 mod geo;
 mod wind;
 
 pub const DATE_INPUT_FORMAT: &str = "%Y-%m-%d %H:%M";
+pub const DEFAULT_BEFORE: i64 = 1;
+pub const DEFAULT_AFTER: i64 = 3;
 
 #[derive(Clone)]
 pub struct WedClient {
@@ -57,6 +60,9 @@ fn date_parser(value: &str) -> Result<NaiveDateTime> {
 pub struct Event {
     pub name: Option<String>,
     pub when: NaiveDateTime,
+    pub before: Option<i64>,
+    pub after: Option<i64>,
+
     location: String,
     latitude: f64,
     longitude: f64,
@@ -67,6 +73,8 @@ impl Event {
         client: &WedClient,
         name: Option<String>,
         date: String,
+        before: Option<i64>,
+        after: Option<i64>,
         location: String,
     ) -> Result<Self> {
         let when = date_parser(&date)?;
@@ -75,6 +83,8 @@ impl Event {
         Ok(Self {
             name,
             when,
+            before,
+            after,
             location,
             latitude,
             longitude,
@@ -115,16 +125,19 @@ impl Event {
         true
     }
 
-    pub async fn weather(&self, client: &WedClient, units: &Units) -> Result<Weather<'_>> {
-        Weather::new(
-            client,
-            self.when,
-            self.latitude,
-            self.longitude,
-            units,
-            self.name.clone(),
-            self.location.clone(),
-        )
-        .await
+    pub fn window(&self) -> Window {
+        Window {
+            start: self.when - chrono::Duration::hours(self.before.unwrap_or(DEFAULT_BEFORE)),
+            end: self.when + chrono::Duration::hours(self.after.unwrap_or(DEFAULT_AFTER)),
+        }
+    }
+
+    pub async fn weather(
+        &self,
+        client: &WedClient,
+        units: &Units,
+        window: Option<Window>,
+    ) -> Result<Weather<'_>> {
+        Weather::new(client, self, window, units).await
     }
 }

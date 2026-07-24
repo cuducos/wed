@@ -12,12 +12,15 @@ const FILE_NAME: &str = ".wed.json";
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct SavedEvent {
     pub name: String,
-    pub location: String,
-    pub latitude: f64,
-    pub longitude: f64,
 
     #[serde(with = "date_format")]
     pub when: NaiveDateTime,
+    pub before: Option<i64>,
+    pub after: Option<i64>,
+
+    pub location: String,
+    pub latitude: f64,
+    pub longitude: f64,
 }
 
 impl SavedEvent {
@@ -25,6 +28,8 @@ impl SavedEvent {
         Event {
             name: Some(self.name.clone()),
             when: self.when,
+            before: self.before,
+            after: self.after,
             location: self.location.clone(),
             latitude: self.latitude,
             longitude: self.longitude,
@@ -39,10 +44,12 @@ impl SavedEvent {
 
         Ok(Self {
             name,
+            when: event.when,
+            before: event.before,
+            after: event.after,
             location: event.location.clone(),
             latitude: event.latitude,
             longitude: event.longitude,
-            when: event.when,
         })
     }
 }
@@ -149,6 +156,8 @@ mod tests {
             location: "Event Location".to_string(),
             latitude: 42.0,
             longitude: -73.0,
+            before: None,
+            after: None,
             when: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
         };
         let expected_event = Event {
@@ -157,6 +166,8 @@ mod tests {
             location: "Event Location".to_string(),
             latitude: 42.0,
             longitude: -73.0,
+            before: None,
+            after: None,
         };
 
         assert_eq!(saved_event.to_event(), expected_event);
@@ -170,12 +181,16 @@ mod tests {
             location: "Event Location".to_string(),
             latitude: 42.0,
             longitude: -73.0,
+            before: None,
+            after: None,
         };
         let expected_saved_event = SavedEvent {
             name: "Event Name".to_string(),
             location: "Event Location".to_string(),
             latitude: 42.0,
             longitude: -73.0,
+            before: None,
+            after: None,
             when: NaiveDateTime::parse_from_str("2021-05-20 8:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
         };
         let result = SavedEvent::from_event(&event);
@@ -193,6 +208,8 @@ mod tests {
             location: "Event Location".to_string(),
             latitude: 42.0,
             longitude: -73.0,
+            before: None,
+            after: None,
         };
 
         let result = SavedEvent::from_event(&event);
@@ -212,6 +229,8 @@ mod tests {
                 location: "Location 1".to_string(),
                 latitude: 42.0,
                 longitude: -73.0,
+                before: None,
+                after: None,
                 when: Local::now().naive_local() + Duration::try_days(1).unwrap(),
             },
             SavedEvent {
@@ -219,6 +238,8 @@ mod tests {
                 location: "Location 2".to_string(),
                 latitude: 42.0,
                 longitude: -73.0,
+                before: None,
+                after: None,
                 when: Local::now().naive_local() + Duration::try_days(2).unwrap(),
             },
         ];
@@ -241,6 +262,8 @@ mod tests {
                 location: "Location 1".to_string(),
                 latitude: 42.0,
                 longitude: -73.0,
+                before: None,
+                after: None,
                 when: Local::now().naive_local() - Duration::try_days(1).unwrap(),
             },
             SavedEvent {
@@ -248,6 +271,8 @@ mod tests {
                 location: "Location 2".to_string(),
                 latitude: 42.0,
                 longitude: -73.0,
+                before: None,
+                after: None,
                 when: Local::now().naive_local() + Duration::try_days(2).unwrap(),
             },
         ];
@@ -286,6 +311,8 @@ mod tests {
             location: "Location 1".to_string(),
             latitude: 42.0,
             longitude: -73.0,
+            before: None,
+            after: None,
             when: Local::now().naive_local() + Duration::try_days(1).unwrap(),
         });
         saved_events.add(SavedEvent {
@@ -293,6 +320,8 @@ mod tests {
             location: "Location 2".to_string(),
             latitude: 42.0,
             longitude: -73.0,
+            before: None,
+            after: None,
             when: Local::now().naive_local() + Duration::try_days(2).unwrap(),
         });
         saved_events.to_file_path(&path).unwrap();
@@ -313,6 +342,8 @@ mod tests {
             location: "Location 1".to_string(),
             latitude: 42.0,
             longitude: -73.0,
+            before: None,
+            after: None,
             when: Local::now().naive_local() - Duration::try_days(1).unwrap(),
         });
         saved_events.add(SavedEvent {
@@ -320,6 +351,8 @@ mod tests {
             location: "Location 2".to_string(),
             latitude: 42.0,
             longitude: -73.0,
+            before: None,
+            after: None,
             when: Local::now().naive_local() + Duration::try_days(2).unwrap(),
         });
         saved_events.to_file_path(&path).unwrap();
@@ -339,6 +372,8 @@ mod tests {
             location: "Location 1".to_string(),
             latitude: 42.0,
             longitude: -73.0,
+            before: None,
+            after: None,
             when,
         });
         saved_events.add(SavedEvent {
@@ -346,6 +381,8 @@ mod tests {
             location: "Location 2".to_string(),
             latitude: 42.0,
             longitude: -73.0,
+            before: None,
+            after: None,
             when: Local::now().naive_local() + Duration::try_days(2).unwrap(),
         });
         saved_events.add(SavedEvent {
@@ -353,6 +390,8 @@ mod tests {
             location: "Location 1".to_string(),
             latitude: 42.0,
             longitude: -73.0,
+            before: None,
+            after: None,
             when,
         });
 
@@ -368,6 +407,8 @@ mod tests {
             location: "Location 1".to_string(),
             latitude: 42.0,
             longitude: -73.0,
+            before: None,
+            after: None,
             when: Local::now().naive_local() - Duration::try_days(1).unwrap(),
         });
         saved_events.add(SavedEvent {
@@ -375,6 +416,8 @@ mod tests {
             location: "Location 2".to_string(),
             latitude: 42.0,
             longitude: -73.0,
+            before: None,
+            after: None,
             when: Local::now().naive_local() + Duration::try_days(2).unwrap(),
         });
 

@@ -3,15 +3,19 @@ use clap::{Parser, Subcommand};
 use wed::persistence::{SavedEvent, SavedEvents};
 use wed::units::Units;
 use wed::weather::Notification;
-use wed::{Event, WedClient};
+use wed::{Event, WedClient, DEFAULT_AFTER, DEFAULT_BEFORE};
 
 /// Weather on the Event Day
 #[derive(Parser)]
 #[command(author, version, about, long_about=None)]
 struct Args {
     /// Outputs the weather forecast in JSON format (instead of the human-readable version)
-    #[arg(short, long)]
+    #[arg(short, long, conflicts_with = "chart")]
     json: bool,
+
+    /// Show a chart of the hourly weather forecast
+    #[arg(short, long)]
+    chart: bool,
 
     /// Output more information about the internal state of the application
     #[arg(short, long)]
@@ -24,6 +28,10 @@ struct Args {
     /// Number of retries for rate-limited requests
     #[arg(short, long, default_value_t = 7)]
     retries: u64,
+
+    /// Force a specific terminal width for the chart (overrides detection)
+    #[arg(short = 'w', long, global = true)]
+    width: Option<usize>,
 
     #[command(subcommand)]
     command: Option<Commands>,
@@ -42,10 +50,21 @@ enum Commands {
         name: String,
         location: String,
         when: String,
+        #[arg(short, long, default_value_t = DEFAULT_BEFORE)]
+        before: i64,
+        #[arg(short, long, default_value_t = DEFAULT_AFTER)]
+        after: i64,
     },
 
     /// Show the forecast for a given location, date and time
-    Forecast { location: String, when: String },
+    Forecast {
+        location: String,
+        when: String,
+        #[arg(short, long, default_value_t = DEFAULT_BEFORE)]
+        before: i64,
+        #[arg(short, long, default_value_t = DEFAULT_AFTER)]
+        after: i64,
+    },
 
     /// Display a desktop notification (defaults to JSON output on unsupported systems or on failure)
     Notify {},
@@ -79,6 +98,8 @@ async fn forecast_for_saved_events(
     units: &Units,
     verbose: bool,
     json: bool,
+    chart: bool,
+    width: Option<usize>,
 ) -> Result<()> {
     let saved = load_saved_events(verbose)
         .await?
@@ -93,8 +114,12 @@ async fn forecast_for_saved_events(
     for event in saved {
         let unit = units.clone();
         let client = client.clone();
+        let window = if chart { Some(event.window()) } else { None };
         tasks.push(tokio::spawn(async move {
-            event.weather(&client, &unit).await?.as_string(json)
+            event
+                .weather(&client, &unit, window)
+                .await?
+                .as_string(json, chart, width)
         }));
     }
 
@@ -119,9 +144,18 @@ async fn forecast_for(
     units: &Units,
     json: bool,
     verbose: bool,
+    chart: bool,
+    width: Option<usize>,
 ) -> Result<()> {
     if event.has_weather_forecast(verbose) {
-        println!("{}", event.weather(client, units).await?.as_string(json)?);
+        let window = if chart { Some(event.window()) } else { None };
+        println!(
+            "{}",
+            event
+                .weather(client, units, window)
+                .await?
+                .as_string(json, chart, width)?
+        );
     }
     Ok(())
 }
@@ -158,7 +192,7 @@ async fn load_notification(
         return None;
     }
     events[0]
-        .weather(client, units)
+        .weather(client, units, None)
         .await
         .ok()?
         .as_notification()
@@ -190,21 +224,71 @@ async fn main() -> Result<()> {
     let client = WedClient::new(args.retries)?;
 
     match &args.command {
-        None => forecast_for_saved_events(&client, &units, args.verbose, args.json).await,
+        None => {
+            forecast_for_saved_events(
+                &client,
+                &units,
+                args.verbose,
+                args.json,
+                args.chart,
+                args.width,
+            )
+            .await
+        }
         Some(Commands::List {}) => list_saved_events(args.verbose).await,
         Some(Commands::Delete { name }) => delete_event(name, args.verbose).await,
-        Some(Commands::Forecast { location, when }) => {
-            let event = Event::new(&client, None, when.clone(), location.clone()).await?;
-            forecast_for(&client, &event, &units, args.json, args.verbose).await
+        Some(Commands::Forecast {
+            location,
+            when,
+            before,
+            after,
+        }) => {
+            let event = Event::new(
+                &client,
+                None,
+                when.clone(),
+                Some(*before),
+                Some(*after),
+                location.clone(),
+            )
+            .await?;
+            forecast_for(
+                &client,
+                &event,
+                &units,
+                args.json,
+                args.verbose,
+                args.chart,
+                args.width,
+            )
+            .await
         }
         Some(Commands::Save {
             name,
             location,
             when,
+            before,
+            after,
         }) => {
-            let event =
-                Event::new(&client, Some(name.clone()), when.clone(), location.clone()).await?;
-            forecast_for(&client, &event, &units, args.json, args.verbose).await?;
+            let event = Event::new(
+                &client,
+                Some(name.clone()),
+                when.clone(),
+                Some(*before),
+                Some(*after),
+                location.clone(),
+            )
+            .await?;
+            forecast_for(
+                &client,
+                &event,
+                &units,
+                args.json,
+                args.verbose,
+                args.chart,
+                args.width,
+            )
+            .await?;
             save_event(&event).await
         }
 

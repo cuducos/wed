@@ -20,6 +20,25 @@ pub struct Notification {
 }
 
 #[derive(Serialize, Debug)]
+pub struct HourlyForecast<'a> {
+    pub icon: &'a str,
+    #[serde(with = "date_format")]
+    pub date: NaiveDateTime,
+    pub weather_code: i8,
+    pub probability_of_precipitation: i8,
+    pub temperature: f64,
+    pub feels_like: f64,
+    pub humidity: i8,
+    pub wind_speed: f64,
+    pub wind_direction: i32,
+}
+
+pub struct Window {
+    pub start: NaiveDateTime,
+    pub end: NaiveDateTime,
+}
+
+#[derive(Serialize, Debug)]
 pub struct Weather<'a> {
     pub name: Option<String>,
     pub location: String,
@@ -35,19 +54,23 @@ pub struct Weather<'a> {
     pub humidity: i8,
     pub wind_speed: f64,
     pub wind_direction: i32,
+    pub forecast: Vec<HourlyForecast<'a>>,
 }
 
 impl Weather<'_> {
     pub async fn new(
         client: &WedClient,
-        when: NaiveDateTime,
-        latitude: f64,
-        longitude: f64,
+        event: &crate::Event,
+        window: Option<Window>,
         units: &Units,
-        name: Option<String>,
-        location: String,
     ) -> Result<Self> {
-        let date = when.format("%Y-%m-%d");
+        let (start, end) = match &window {
+            Some(w) => (w.start, w.end),
+            None => (event.when, event.when),
+        };
+        let start_date = start.format("%Y-%m-%d").to_string();
+        let end_date = end.format("%Y-%m-%d").to_string();
+
         let params = [
             "temperature_2m",
             "apparent_temperature",
@@ -61,12 +84,12 @@ impl Weather<'_> {
         let url = Url::parse_with_params(
             API_URL,
             &[
-                ("latitude", latitude.to_string()),
-                ("longitude", longitude.to_string()),
-                ("start_date", date.to_string()),
-                ("end_date", date.to_string()),
+                ("latitude", event.latitude.to_string()),
+                ("longitude", event.longitude.to_string()),
+                ("start_date", start_date),
+                ("end_date", end_date),
                 ("temperature_unit", units.temperature()),
-                ("windspeed_10m", units.speed()),
+                ("wind_speed_unit", units.speed()),
                 ("timezone", "auto".to_string()),
                 ("hourly", params),
             ],
@@ -90,7 +113,13 @@ impl Weather<'_> {
             let message = format!("Failed to parse response JSON body from {url_for_error}: {e}");
             anyhow!(message)
         })?;
-        data.hourly.as_weather(when, name, location, units)
+        data.hourly.as_weather(
+            event.name.clone(),
+            event.when,
+            window,
+            event.location.clone(),
+            units,
+        )
     }
 
     pub fn as_notification(&self) -> Result<Notification> {
@@ -134,18 +163,28 @@ impl Weather<'_> {
             body,
         })
     }
-    pub fn as_string(&self, json: bool) -> Result<String> {
+    pub fn as_string(&self, json: bool, chart: bool, width: Option<usize>) -> Result<String> {
         if json {
             return Ok(serde_json::to_string(&self)?);
         }
 
         let notification = self.as_notification()?;
-        Ok(format!(
-            "{} {}\n{}",
-            notification.title,
-            notification.subtitle,
-            notification.body.replace('\n', " "),
-        ))
+        let mut text = if chart {
+            format!("{}\n", notification.subtitle)
+        } else {
+            format!(
+                "{} {}\n{}",
+                notification.title,
+                notification.subtitle,
+                notification.body.replace('\n', " "),
+            )
+        };
+
+        if chart && !self.forecast.is_empty() {
+            text.push_str(&crate::chart::render(self, width));
+        }
+
+        Ok(text)
     }
 }
 
@@ -194,20 +233,37 @@ impl Hourly {
 
     fn as_weather<'a>(
         &self,
-        target: NaiveDateTime,
         name: Option<String>,
+        target: NaiveDateTime,
+        window: Option<Window>,
         location: String,
         units: &Units,
     ) -> Result<Weather<'a>> {
         let item: HourlyItem = (0..self.time.len())
             .filter_map(|idx| self.item(idx))
-            .map(|item| {
-                let diff = (target - item.time).num_minutes().abs();
-                (item, diff)
-            })
-            .min_by_key(|(_, diff)| *diff)
-            .ok_or(anyhow!("No weather data found"))?
-            .0;
+            .min_by_key(|item| (target - item.time).num_minutes().abs())
+            .ok_or(anyhow!("No weather data found"))?;
+
+        let forecast: Result<Vec<HourlyForecast>> = match window {
+            Some(w) => (0..self.time.len())
+                .filter_map(|idx| self.item(idx))
+                .filter(|i| i.time >= w.start && i.time <= w.end)
+                .map(|i| {
+                    Ok(HourlyForecast {
+                        icon: emoji_for_weather(i.weathercode)?,
+                        date: i.time,
+                        weather_code: i.weathercode,
+                        probability_of_precipitation: i.precipitation_probability,
+                        temperature: i.temperature_2m,
+                        feels_like: i.apparent_temperature,
+                        humidity: i.relativehumidity_2m,
+                        wind_speed: i.windspeed_10m,
+                        wind_direction: i.winddirection_10m,
+                    })
+                })
+                .collect(),
+            None => Ok(vec![]),
+        };
 
         Ok(Weather {
             name,
@@ -222,6 +278,7 @@ impl Hourly {
             humidity: item.relativehumidity_2m,
             wind_speed: item.windspeed_10m,
             wind_direction: item.winddirection_10m,
+            forecast: forecast?,
         })
     }
 }
@@ -245,6 +302,7 @@ mod tests {
             humidity: 80,
             wind_speed: 10.0,
             wind_direction: 180,
+            forecast: vec![],
         };
 
         let result = weather.as_notification();
@@ -276,9 +334,10 @@ mod tests {
             humidity: 80,
             wind_speed: 10.0,
             wind_direction: 180,
+            forecast: vec![],
         };
 
-        let result = weather.as_string(false);
+        let result = weather.as_string(false, false, None);
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap(),
@@ -305,13 +364,14 @@ mod tests {
             humidity: 80,
             wind_speed: 10.0,
             wind_direction: 180,
+            forecast: vec![],
         };
 
-        let result = weather.as_string(true);
+        let result = weather.as_string(true, false, None);
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap(),
-            r#"{"name":"Event","location":"Location","units":"Metric","icon":"☀️","date":"2021-05-20 08:00:00","weather_code":1,"probability_of_precipitation":20,"temperature":25.0,"feels_like":28.0,"humidity":80,"wind_speed":10.0,"wind_direction":180}"#
+            r#"{"name":"Event","location":"Location","units":"Metric","icon":"☀️","date":"2021-05-20 08:00:00","weather_code":1,"probability_of_precipitation":20,"temperature":25.0,"feels_like":28.0,"humidity":80,"wind_speed":10.0,"wind_direction":180,"forecast":[]}"#
         );
     }
 }
