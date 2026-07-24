@@ -47,21 +47,30 @@ enum Commands {
 
     /// Save an event
     Save {
+        /// The name of the event
         name: String,
+        /// The location of the event (e.g. "Ottawa, ON, Canada")
         location: String,
+        /// The date and time of the event (e.g. "2022-07-09 09:00")
         when: String,
+        /// Hours before the event to include in the forecast window
         #[arg(short, long, default_value_t = DEFAULT_BEFORE)]
         before: i64,
+        /// Hours after the event to include in the forecast window
         #[arg(short, long, default_value_t = DEFAULT_AFTER)]
         after: i64,
     },
 
     /// Show the forecast for a given location, date and time
     Forecast {
+        /// The location (e.g. "Ottawa, ON, Canada")
         location: String,
+        /// The date and time (e.g. "2022-07-09 09:00")
         when: String,
+        /// Hours before the event to include in the forecast window
         #[arg(short, long, default_value_t = DEFAULT_BEFORE)]
         before: i64,
+        /// Hours after the event to include in the forecast window
         #[arg(short, long, default_value_t = DEFAULT_AFTER)]
         after: i64,
     },
