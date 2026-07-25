@@ -128,7 +128,12 @@ You can also combine `--chart` and `--json` to add the hourly forecast to the ou
 $ wed notify
 ```
 
-[![](https://i.imgur.com/0tZjOVS.png)](https://imgur.com/a/pitcf3k)
+
+<div style="width:38%">
+
+[![Example notification: the title goes on the first line, the location is next, followed by temperature and "feels like", precipitation and wind speed, one in each line.](https://i.imgur.com/0tZjOVS.png)](https://imgur.com/a/pitcf3k)
+
+</div>
 
 If the notification fails or is not supported by the operating system, it will output the same information as `wed --json notify`:
 
