@@ -10,7 +10,7 @@ use wed::{Event, WedClient, DEFAULT_AFTER, DEFAULT_BEFORE};
 #[command(author, version, about, long_about=None)]
 struct Args {
     /// Outputs the weather forecast in JSON format (instead of the human-readable version)
-    #[arg(short, long, conflicts_with = "chart")]
+    #[arg(short, long)]
     json: bool,
 
     /// Show a chart of the hourly weather forecast

@@ -54,6 +54,8 @@ pub struct Weather<'a> {
     pub humidity: i8,
     pub wind_speed: f64,
     pub wind_direction: i32,
+
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub forecast: Vec<HourlyForecast<'a>>,
 }
 
@@ -371,7 +373,7 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(
             result.unwrap(),
-            r#"{"name":"Event","location":"Location","units":"Metric","icon":"☀️","date":"2021-05-20 08:00:00","weather_code":1,"probability_of_precipitation":20,"temperature":25.0,"feels_like":28.0,"humidity":80,"wind_speed":10.0,"wind_direction":180,"forecast":[]}"#
+            r#"{"name":"Event","location":"Location","units":"Metric","icon":"☀️","date":"2021-05-20 08:00:00","weather_code":1,"probability_of_precipitation":20,"temperature":25.0,"feels_like":28.0,"humidity":80,"wind_speed":10.0,"wind_direction":180}"#
         );
     }
 }

@@ -116,6 +116,8 @@ $ wed --json
 ]
 ```
 
+You can also combine `--chart` and `--json` to add the hourly forecast to the output.
+
 </details>
 
 ### Desktop notifications
